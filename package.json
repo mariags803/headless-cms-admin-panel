@@ -1,0 +1,21 @@
+{
+  "name": "headless-cms-admin-panel",
+  "private": true,
+  "workspaces": ["shared", "backend", "frontend"],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend \"npm:dev -w backend\" \"npm:dev -w frontend\"",
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
+    "concurrently": "^10.0.3",
+    "jest": "^30.4.2",
+    "typescript": "^6.0.3"
+  }
+}

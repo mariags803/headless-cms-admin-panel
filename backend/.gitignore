@@ -1,0 +1,11 @@
+# Backend-specific ignores. Common ones (node_modules, dist, coverage,
+# *.tsbuildinfo, logs, .env) live in the root .gitignore.
+
+# Local SQLite database — dev data, never commit it.
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+data/

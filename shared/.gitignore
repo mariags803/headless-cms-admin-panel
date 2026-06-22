@@ -1,0 +1,7 @@
+# shared/ is source-only (no build step), so there are no package-specific
+# artifacts to ignore here — node_modules, coverage and *.tsbuildinfo are all
+# covered by the root .gitignore.
+#
+# This file exists only so the convention (a .gitignore per package) is
+# consistent. Add entries here only if something is generated *inside* shared/
+# that the root file doesn't already cover.

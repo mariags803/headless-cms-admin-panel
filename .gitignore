@@ -1,0 +1,43 @@
+# ── Dependencies ───────────────────────────────────────────────
+# Matches node_modules at any depth, including each workspace's own.
+node_modules/
+.pnp
+.pnp.*
+
+# ── Build output ───────────────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+
+# ── Test coverage ──────────────────────────────────────────────
+coverage/
+
+# ── Caches ─────────────────────────────────────────────────────
+.cache/
+.swc/
+.eslintcache
+
+# ── Logs ───────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Environment variables (keep .env.example committed) ────────
+.env
+.env.local
+.env.*.local
+
+# ── OS ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editors ────────────────────────────────────────────────────
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

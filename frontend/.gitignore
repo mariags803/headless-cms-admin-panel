@@ -1,0 +1,9 @@
+# Frontend-specific ignores (Vite). Common ones (node_modules, dist,
+# coverage, *.tsbuildinfo, logs, .env) live in the root .gitignore.
+
+# Vite SSR build + dev cache
+dist-ssr/
+.vite/
+
+# Local-only env overrides used by Vite
+*.local
