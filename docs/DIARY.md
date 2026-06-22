@@ -91,3 +91,15 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §9.
 - **Tests:** none yet (scaffold pending).
 - **Next:** Task 0.1 — monorepo scaffold (shared / backend / frontend workspaces +
   Vitest configs).
+
+### [2026-06-22] 0.2 — Contract (shared/src/contract)
+- **Did:** Wrote the canonical contract types in `shared/src/contract/`: `FieldType`,
+  `Field`, `Schema`, `Entry`/`FieldValue`, `events.ts` (`DomainEvent`), `evolution.ts`
+  (`SchemaChange`, `RiskLevel`, `AffectedEntry`). Barrel at `contract/index.ts` and root
+  `shared/src/index.ts` re-export everything via `export type` for `@cms/shared`.
+- **Decisions:** Kept evolution types in their own `evolution.ts` file rather than
+  bundling them into `Schema.ts`, since they belong to a separate domain (schema
+  evolution) and mirror the `shared/src/evolution/` folder coming in Phase 6. All
+  cross-file imports use `import type` per `verbatimModuleSyntax`.
+- **Tests:** none — types only, no logic to test.
+- **Next:** Task 0.3 — SQLite init + migrations.
