@@ -85,7 +85,7 @@ the controller, so any future transport stays consistent.
 ## Tasks (backend slice of the backlog)
 
 - 0.3 SQLite init + migrations.
-- 1.1–1.4 Schemas / Entries CRUD + Read API — each endpoint is one task with a `curl`
+- 1.1–1.3 Schemas / Entries CRUD + Read API — each endpoint is one task with a `curl`
   acceptance check.
 - 2.1 SSE endpoint `/events` + `EventPublisher` port & adapter.
 - 2.2 Publish a `DomainEvent` from every mutation.

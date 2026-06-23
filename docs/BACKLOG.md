@@ -11,9 +11,8 @@ repeat their own slice.
 
 **Phase 1 — Backend CRUD** (each endpoint = a task with a `curl` acceptance check)
 - 1.1 Schemas: `GET/POST/PUT/DELETE /schemas`.
-- 1.2 Entries read: `GET /entries?schema=`, `GET /entries/:id`.
-- 1.3 Entries write: `POST/PUT/DELETE /entries`.
-- 1.4 Read API (E): `GET /api/content/:schema`, `/:schema/:id` (resolve fieldId→name).
+- 1.2 Entries: `GET /entries?schema=`, `GET /entries/:id`, `POST/PUT/DELETE /entries`.
+- 1.3 Read API (E): `GET /api/content/:schema`, `/:schema/:id` (resolve fieldId→name).
 
 **Phase 2 — Real-time**
 - 2.1 SSE endpoint `/events` + `EventPublisher` port & adapter.

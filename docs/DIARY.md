@@ -129,7 +129,7 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   SqliteSchemaRepository` (upsert via `ON CONFLICT`). `infrastructure/http/express/`:
   `SchemaController` (router), `errorHandler`, `server.ts`. `main.ts` composition
   root.
-- **Decisions:** Established the error-response convention reused by 1.2–1.4:
+- **Decisions:** Established the error-response convention reused by 1.2–1.3:
   `404 { error: "NOT_FOUND", message }`, `400 { error: "VALIDATION_ERROR", message,
   details: string[] }`. `UpdateSchema` does a plain field/name replace, no
   evolution-risk classification — that's Phase 6's job, layered on top later.
@@ -143,4 +143,4 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   against `:memory:` (round-trip incl. nested `Field[]`, upsert, delete); `SchemaController`
   via supertest against the real use cases + SQLite repo, covering all 4 endpoints'
   happy and error paths. 31 tests total, all green; `tsc --noEmit` clean.
-- **Next:** Task 1.2 — Entries read (`GET /entries?schema=`, `GET /entries/:id`).
+- **Next:** Task 1.2 — Entries: `GET /entries?schema=`, `GET /entries/:id`, `POST/PUT/DELETE /entries`.
