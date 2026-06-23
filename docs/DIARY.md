@@ -118,3 +118,29 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   non-existent `schema_id` throws (proves `PRAGMA foreign_keys` actually took effect,
   since SQLite defaults it off).
 - **Next:** Task 1.1 — Schemas CRUD endpoints (`GET/POST/PUT/DELETE /schemas`).
+
+### [2026-06-23] 1.1 — Schemas CRUD (`GET/POST/PUT/DELETE /schemas`)
+- **Did:** First application/infrastructure vertical slice. `domain/schema/`:
+  `Schema` (re-export), `SchemaRepository` port, `SchemaNotFound`/`InvalidSchema`
+  errors. `application/schema/`: `CreateSchema`, `ListSchemas`, `UpdateSchema`,
+  `DeleteSchema` (TDD against an `InMemorySchemaRepository` fake), plus
+  `validateSchemaInput` (manual checks: name required, field shape, reference
+  needs `refSchemaId`, no duplicate field ids). `infrastructure/persistence/sqlite/
+  SqliteSchemaRepository` (upsert via `ON CONFLICT`). `infrastructure/http/express/`:
+  `SchemaController` (router), `errorHandler`, `server.ts`. `main.ts` composition
+  root.
+- **Decisions:** Established the error-response convention reused by 1.2–1.4:
+  `404 { error: "NOT_FOUND", message }`, `400 { error: "VALIDATION_ERROR", message,
+  details: string[] }`. `UpdateSchema` does a plain field/name replace, no
+  evolution-risk classification — that's Phase 6's job, layered on top later.
+  `DeleteSchema` 404s on an unknown id rather than silently no-op'ing, matching the
+  controller's 404 contract. IDs via `node:crypto.randomUUID()`, no new dep. Closed
+  a pre-existing gap: `backend/tsconfig.json` didn't exist, so `@cms/shared` only
+  resolved inside Jest — added it (no `rootDir`/`outDir`, since `shared/` lives
+  outside the backend tree and is source-only). Added `supertest` +
+  `@types/supertest` as new devDependencies for controller tests.
+- **Tests:** 4 use-case test files against the in-memory fake; `SqliteSchemaRepository`
+  against `:memory:` (round-trip incl. nested `Field[]`, upsert, delete); `SchemaController`
+  via supertest against the real use cases + SQLite repo, covering all 4 endpoints'
+  happy and error paths. 31 tests total, all green; `tsc --noEmit` clean.
+- **Next:** Task 1.2 — Entries read (`GET /entries?schema=`, `GET /entries/:id`).
