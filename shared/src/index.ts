@@ -8,4 +8,6 @@ export type {
   SchemaChange,
   RiskLevel,
   AffectedEntry,
+  ValidationError,
 } from './contract';
+export { validateEntry } from './validation/validateEntry';

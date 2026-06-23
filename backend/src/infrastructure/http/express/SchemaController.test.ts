@@ -2,10 +2,16 @@ import request from 'supertest';
 import type Database from 'better-sqlite3';
 import { createDb } from '../../persistence/sqlite/db';
 import { SqliteSchemaRepository } from '../../persistence/sqlite/SqliteSchemaRepository';
+import { SqliteEntryRepository } from '../../persistence/sqlite/SqliteEntryRepository';
 import { CreateSchema } from '../../../application/schema/CreateSchema';
 import { ListSchemas } from '../../../application/schema/ListSchemas';
 import { UpdateSchema } from '../../../application/schema/UpdateSchema';
 import { DeleteSchema } from '../../../application/schema/DeleteSchema';
+import { CreateEntry } from '../../../application/entry/CreateEntry';
+import { ListEntries } from '../../../application/entry/ListEntries';
+import { GetEntry } from '../../../application/entry/GetEntry';
+import { UpdateEntry } from '../../../application/entry/UpdateEntry';
+import { DeleteEntry } from '../../../application/entry/DeleteEntry';
 import { createServer } from './server';
 
 describe('SchemaController', () => {
@@ -15,12 +21,20 @@ describe('SchemaController', () => {
   beforeEach(() => {
     db = createDb(':memory:');
     const repo = new SqliteSchemaRepository(db);
+    const entryRepo = new SqliteEntryRepository(db);
     app = createServer({
       schema: {
         createSchema: new CreateSchema(repo),
         listSchemas: new ListSchemas(repo),
         updateSchema: new UpdateSchema(repo),
         deleteSchema: new DeleteSchema(repo),
+      },
+      entry: {
+        createEntry: new CreateEntry(entryRepo, repo),
+        listEntries: new ListEntries(entryRepo),
+        getEntry: new GetEntry(entryRepo),
+        updateEntry: new UpdateEntry(entryRepo, repo),
+        deleteEntry: new DeleteEntry(entryRepo),
       },
     });
   });

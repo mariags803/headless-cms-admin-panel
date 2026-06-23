@@ -144,3 +144,47 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   via supertest against the real use cases + SQLite repo, covering all 4 endpoints'
   happy and error paths. 31 tests total, all green; `tsc --noEmit` clean.
 - **Next:** Task 1.2 — Entries: `GET /entries?schema=`, `GET /entries/:id`, `POST/PUT/DELETE /entries`.
+
+### [2026-06-23] 1.2 — Entries CRUD (`GET /entries?schema=`, `GET /entries/:id`, `POST/PUT/DELETE /entries`)
+- **Did:** Mirrors 1.1's slice for the `entry` aggregate, plus the first real use of
+  `shared/`'s validation layer. `shared/src/validation/validateEntry.ts` (TDD): checks
+  required fields and per-`FieldType` value matching (`text`/`date`→string,
+  `number`→number, `boolean`→boolean, `reference`→`string | null`); added
+  `shared/jest.config.ts` since `shared/` had no test runner config yet. New contract
+  type `shared/src/contract/ValidationError.ts` (`{ fieldId?, message }`), exported
+  from `shared/src/index.ts` alongside the new `validateEntry` function export.
+  `domain/entry/`: `Entry` (re-export), `EntryRepository` port
+  (`findBySchemaId`/`findById`/`save`/`delete`), `EntryNotFound`/`InvalidEntry` errors.
+  `application/entry/`: `CreateEntry`, `ListEntries`, `GetEntry`, `UpdateEntry`,
+  `DeleteEntry` (TDD against `InMemoryEntryRepository`), reusing
+  `InMemorySchemaRepository`/`CreateSchema` from 1.1 in tests since entries need a
+  schema to validate against. `infrastructure/persistence/sqlite/
+  SqliteEntryRepository` (no new migration — the `entries` table already existed from
+  0.3). `infrastructure/http/express/EntryController` mounted at `/entries`;
+  `errorHandler`/`server.ts`/`main.ts` extended for the new error types and deps.
+- **Decisions:** `validateEntry` returns `ValidationError[]`, not 1.1's `string[]`
+  convention — `shared/CLAUDE.md` already documented this exact signature, so the
+  contract type was added now rather than deferred. `CreateEntry`/`UpdateEntry` reuse
+  `SchemaNotFound` from `domain/schema/SchemaErrors` for an unknown `schemaId` instead
+  of defining a duplicate entry-scoped error — it's the same failure condition, and
+  `errorHandler` already 404s it. `GET /entries?schema=<unknown-id>` returns `200 []`
+  rather than 404 — listing against a schema with zero entries is indistinguishable at
+  the repository level; only `create`/`update` validate schema existence. Unknown keys
+  in `data` not matching any `field.id` are silently ignored, not rejected, by
+  `validateEntry`. `schemaId` is immutable via `PUT /entries/:id` — only `data`
+  changes; re-pointing an entry to a different schema isn't a requirement.
+  Reference-field values are checked to be `string | null` but never checked for
+  existence — dangling-reference detection is Phase 6's `scanAffected` job, explicitly
+  out of scope here.
+- **Tests:** 7 `validateEntry` unit tests (shared). Backend: 5 use-case test files
+  against the in-memory fakes (including schema-validation paths in
+  `CreateEntry`/`UpdateEntry`); `SqliteEntryRepository` against `:memory:`
+  (round-trip incl. `data` JSON, `findBySchemaId` filtering, upsert, delete);
+  `EntryController` via supertest against the real use cases + SQLite repos, covering
+  all 5 endpoints' happy and error paths (missing `schema` param, unknown schema,
+  validation failure, not-found). 61 backend tests total (up from 31), all green;
+  `tsc --noEmit` clean on both `shared` and `backend`. Manual `curl` acceptance check
+  against a running server: create schema → create/get/list/update/delete entry →
+  confirmed 404 after delete.
+- **Next:** Task 1.3 — Read API (E): `GET /api/content/:schema`, `/:schema/:id`
+  (resolve `fieldId → name`).

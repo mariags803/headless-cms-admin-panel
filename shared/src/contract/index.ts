@@ -4,3 +4,4 @@ export type { Schema } from './Schema';
 export type { Entry, FieldValue } from './Entry';
 export type { DomainEvent } from './events';
 export type { SchemaChange, RiskLevel, AffectedEntry } from './evolution';
+export type { ValidationError } from './ValidationError';
