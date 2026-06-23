@@ -25,26 +25,27 @@ describe('SchemaController', () => {
     db = createDb(':memory:');
     const repo = new SqliteSchemaRepository(db);
     const entryRepo = new SqliteEntryRepository(db);
+    const eventPublisher = new SseEventPublisher();
     app = createServer({
       schema: {
-        createSchema: new CreateSchema(repo),
+        createSchema: new CreateSchema(repo, eventPublisher),
         listSchemas: new ListSchemas(repo),
-        updateSchema: new UpdateSchema(repo),
-        deleteSchema: new DeleteSchema(repo),
+        updateSchema: new UpdateSchema(repo, eventPublisher),
+        deleteSchema: new DeleteSchema(repo, eventPublisher),
       },
       entry: {
-        createEntry: new CreateEntry(entryRepo, repo),
+        createEntry: new CreateEntry(entryRepo, repo, eventPublisher),
         listEntries: new ListEntries(entryRepo),
         getEntry: new GetEntry(entryRepo),
-        updateEntry: new UpdateEntry(entryRepo, repo),
-        deleteEntry: new DeleteEntry(entryRepo),
+        updateEntry: new UpdateEntry(entryRepo, repo, eventPublisher),
+        deleteEntry: new DeleteEntry(entryRepo, eventPublisher),
       },
       content: {
         listContent: new ListContent(repo, entryRepo),
         getContentEntry: new GetContentEntry(repo, entryRepo),
       },
       events: {
-        publisher: new SseEventPublisher(),
+        publisher: eventPublisher,
       },
     });
   });

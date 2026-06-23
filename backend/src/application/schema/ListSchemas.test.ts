@@ -1,6 +1,7 @@
 import { ListSchemas } from './ListSchemas';
 import { CreateSchema } from './CreateSchema';
 import { InMemorySchemaRepository } from './InMemorySchemaRepository';
+import { InMemoryEventPublisher } from '../events/InMemoryEventPublisher';
 
 describe('ListSchemas', () => {
   it('returns [] when the repository is empty', async () => {
@@ -12,7 +13,7 @@ describe('ListSchemas', () => {
 
   it('returns all saved schemas', async () => {
     const repo = new InMemorySchemaRepository();
-    const create = new CreateSchema(repo);
+    const create = new CreateSchema(repo, new InMemoryEventPublisher());
     await create.execute({ name: 'Car', fields: [] });
     await create.execute({ name: 'Person', fields: [] });
 

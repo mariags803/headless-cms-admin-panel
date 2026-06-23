@@ -248,3 +248,25 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   `npm test` (shared + backend) green.
 - **Next:** `2.2` — make every mutation use case call `publish(...)` with the
   matching `DomainEvent`.
+
+### [2026-06-23] 2.2 — Publish a DomainEvent from every mutation
+- **Did:** All 6 Phase 1 mutation use cases (`CreateSchema`, `UpdateSchema`,
+  `DeleteSchema`, `CreateEntry`, `UpdateEntry`, `DeleteEntry`) now take
+  `EventPublisher` as a constructor dependency and call `publish(...)` with the
+  matching `DomainEvent` right after the repository write succeeds (for deletes,
+  after `delete` resolves). New `application/events/InMemoryEventPublisher.ts`
+  fake (records published events in a public array) mirrors the existing
+  in-memory repository fake pattern, used in tests. `main.ts` now passes the
+  already-instantiated `SseEventPublisher` into all 6 use cases.
+- **Decisions:** Publish from inside the use case, not the controller, per
+  backend/CLAUDE.md — keeps any future transport (e.g. WebSocket) consistent
+  without touching controllers. `DeleteSchema`/`DeleteEntry` publish using the
+  id args (and the looked-up `schemaId` for `entry.deleted`) since the deleted
+  aggregate no longer exists to read back.
+- **Tests:** Added one assertion per use case verifying the exact `DomainEvent`
+  (type + payload) lands in the fake publisher's `events` array. Updated every
+  existing call site (other use case tests' setup helpers, the 4
+  controller/SSE integration test files, `ListSchemas.test.ts`) to pass a
+  publisher. 86 backend tests green (up from 84); `tsc --noEmit` clean.
+- **Next:** `2.3` — `useRealtime()` hook in the front-end, wired to query
+  invalidation on incoming `DomainEvent`s.

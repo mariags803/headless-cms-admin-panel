@@ -3,6 +3,7 @@ import type { Field, Schema } from '@cms/shared';
 import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { InvalidSchema } from '../../domain/schema/SchemaErrors';
 import { validateSchemaInput } from './validateSchemaInput';
+import type { EventPublisher } from '../ports/EventPublisher';
 
 export interface NewSchemaInput {
   name: string;
@@ -10,7 +11,10 @@ export interface NewSchemaInput {
 }
 
 export class CreateSchema {
-  constructor(private readonly schemas: SchemaRepository) {}
+  constructor(
+    private readonly schemas: SchemaRepository,
+    private readonly publisher: EventPublisher,
+  ) {}
 
   async execute(input: NewSchemaInput): Promise<Schema> {
     const fields = input.fields ?? [];
@@ -27,6 +31,7 @@ export class CreateSchema {
     };
 
     await this.schemas.save(schema);
+    this.publisher.publish({ type: 'schema.created', schema });
     return schema;
   }
 }

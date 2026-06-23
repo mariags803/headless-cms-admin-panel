@@ -4,6 +4,7 @@ import type { EntryRepository } from '../../domain/entry/EntryRepository';
 import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { SchemaNotFound } from '../../domain/schema/SchemaErrors';
 import { InvalidEntry } from '../../domain/entry/EntryErrors';
+import type { EventPublisher } from '../ports/EventPublisher';
 
 export interface NewEntryInput {
   schemaId: string;
@@ -14,6 +15,7 @@ export class CreateEntry {
   constructor(
     private readonly entries: EntryRepository,
     private readonly schemas: SchemaRepository,
+    private readonly publisher: EventPublisher,
   ) {}
 
   async execute(input: NewEntryInput): Promise<Entry> {
@@ -33,6 +35,7 @@ export class CreateEntry {
     };
 
     await this.entries.save(entry);
+    this.publisher.publish({ type: 'entry.created', entry });
     return entry;
   }
 }

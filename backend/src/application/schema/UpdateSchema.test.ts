@@ -1,14 +1,15 @@
 import { CreateSchema } from './CreateSchema';
 import { UpdateSchema } from './UpdateSchema';
 import { InMemorySchemaRepository } from './InMemorySchemaRepository';
+import { InMemoryEventPublisher } from '../events/InMemoryEventPublisher';
 import { SchemaNotFound, InvalidSchema } from '../../domain/schema/SchemaErrors';
 
 describe('UpdateSchema', () => {
   it('updates name and fields, bumps updatedAt, preserves id and createdAt', async () => {
     const repo = new InMemorySchemaRepository();
-    const created = await new CreateSchema(repo).execute({ name: 'Car', fields: [] });
+    const created = await new CreateSchema(repo, new InMemoryEventPublisher()).execute({ name: 'Car', fields: [] });
 
-    const updated = await new UpdateSchema(repo).execute({
+    const updated = await new UpdateSchema(repo, new InMemoryEventPublisher()).execute({
       id: created.id,
       name: 'Car (used)',
       fields: [{ id: 'f1', name: 'brand', type: 'text', required: true }],
@@ -21,20 +22,30 @@ describe('UpdateSchema', () => {
     expect(updated.updatedAt >= created.updatedAt).toBe(true);
   });
 
+  it('publishes a schema.updated event', async () => {
+    const repo = new InMemorySchemaRepository();
+    const created = await new CreateSchema(repo, new InMemoryEventPublisher()).execute({ name: 'Car', fields: [] });
+    const publisher = new InMemoryEventPublisher();
+
+    const updated = await new UpdateSchema(repo, publisher).execute({ id: created.id, name: 'Car (used)', fields: [] });
+
+    expect(publisher.events).toEqual([{ type: 'schema.updated', schema: updated }]);
+  });
+
   it('throws SchemaNotFound for an unknown id', async () => {
     const repo = new InMemorySchemaRepository();
 
     await expect(
-      new UpdateSchema(repo).execute({ id: 'does-not-exist', name: 'X', fields: [] }),
+      new UpdateSchema(repo, new InMemoryEventPublisher()).execute({ id: 'does-not-exist', name: 'X', fields: [] }),
     ).rejects.toBeInstanceOf(SchemaNotFound);
   });
 
   it('throws InvalidSchema for an empty name', async () => {
     const repo = new InMemorySchemaRepository();
-    const created = await new CreateSchema(repo).execute({ name: 'Car', fields: [] });
+    const created = await new CreateSchema(repo, new InMemoryEventPublisher()).execute({ name: 'Car', fields: [] });
 
     await expect(
-      new UpdateSchema(repo).execute({ id: created.id, name: '  ', fields: [] }),
+      new UpdateSchema(repo, new InMemoryEventPublisher()).execute({ id: created.id, name: '  ', fields: [] }),
     ).rejects.toBeInstanceOf(InvalidSchema);
   });
 });

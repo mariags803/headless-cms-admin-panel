@@ -2,6 +2,7 @@ import type { Field, Schema } from '@cms/shared';
 import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { InvalidSchema, SchemaNotFound } from '../../domain/schema/SchemaErrors';
 import { validateSchemaInput } from './validateSchemaInput';
+import type { EventPublisher } from '../ports/EventPublisher';
 
 export interface UpdateSchemaInput {
   id: string;
@@ -10,7 +11,10 @@ export interface UpdateSchemaInput {
 }
 
 export class UpdateSchema {
-  constructor(private readonly schemas: SchemaRepository) {}
+  constructor(
+    private readonly schemas: SchemaRepository,
+    private readonly publisher: EventPublisher,
+  ) {}
 
   // Plain replace of name/fields — no evolution-risk classification here.
   // That belongs to Phase 6 (shared/evolution), layered on top later.
@@ -29,6 +33,7 @@ export class UpdateSchema {
     };
 
     await this.schemas.save(updated);
+    this.publisher.publish({ type: 'schema.updated', schema: updated });
     return updated;
   }
 }

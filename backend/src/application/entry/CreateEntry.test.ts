@@ -2,6 +2,7 @@ import { CreateEntry } from './CreateEntry';
 import { InMemoryEntryRepository } from './InMemoryEntryRepository';
 import { InMemorySchemaRepository } from '../schema/InMemorySchemaRepository';
 import { CreateSchema } from '../schema/CreateSchema';
+import { InMemoryEventPublisher } from '../events/InMemoryEventPublisher';
 import { SchemaNotFound } from '../../domain/schema/SchemaErrors';
 import { InvalidEntry } from '../../domain/entry/EntryErrors';
 
@@ -9,7 +10,7 @@ describe('CreateEntry', () => {
   async function setup() {
     const schemaRepo = new InMemorySchemaRepository();
     const entryRepo = new InMemoryEntryRepository();
-    const schema = await new CreateSchema(schemaRepo).execute({
+    const schema = await new CreateSchema(schemaRepo, new InMemoryEventPublisher()).execute({
       name: 'Car',
       fields: [{ id: 'f-brand', name: 'brand', type: 'text', required: true }],
     });
@@ -18,7 +19,7 @@ describe('CreateEntry', () => {
 
   it('creates an entry with generated id and matching createdAt/updatedAt', async () => {
     const { schemaRepo, entryRepo, schema } = await setup();
-    const useCase = new CreateEntry(entryRepo, schemaRepo);
+    const useCase = new CreateEntry(entryRepo, schemaRepo, new InMemoryEventPublisher());
 
     const entry = await useCase.execute({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
 
@@ -28,9 +29,19 @@ describe('CreateEntry', () => {
     expect(await entryRepo.findById(entry.id)).toEqual(entry);
   });
 
+  it('publishes an entry.created event', async () => {
+    const { schemaRepo, entryRepo, schema } = await setup();
+    const publisher = new InMemoryEventPublisher();
+    const useCase = new CreateEntry(entryRepo, schemaRepo, publisher);
+
+    const entry = await useCase.execute({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+
+    expect(publisher.events).toEqual([{ type: 'entry.created', entry }]);
+  });
+
   it('throws SchemaNotFound for an unknown schemaId', async () => {
     const { schemaRepo, entryRepo } = await setup();
-    const useCase = new CreateEntry(entryRepo, schemaRepo);
+    const useCase = new CreateEntry(entryRepo, schemaRepo, new InMemoryEventPublisher());
 
     await expect(
       useCase.execute({ schemaId: 'does-not-exist', data: {} }),
@@ -39,7 +50,7 @@ describe('CreateEntry', () => {
 
   it('throws InvalidEntry when a required field is missing', async () => {
     const { schemaRepo, entryRepo, schema } = await setup();
-    const useCase = new CreateEntry(entryRepo, schemaRepo);
+    const useCase = new CreateEntry(entryRepo, schemaRepo, new InMemoryEventPublisher());
 
     await expect(
       useCase.execute({ schemaId: schema.id, data: {} }),

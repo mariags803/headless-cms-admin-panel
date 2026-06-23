@@ -3,6 +3,7 @@ import type { EntryRepository } from '../../domain/entry/EntryRepository';
 import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { SchemaNotFound } from '../../domain/schema/SchemaErrors';
 import { EntryNotFound, InvalidEntry } from '../../domain/entry/EntryErrors';
+import type { EventPublisher } from '../ports/EventPublisher';
 
 export interface UpdateEntryInput {
   id: string;
@@ -13,6 +14,7 @@ export class UpdateEntry {
   constructor(
     private readonly entries: EntryRepository,
     private readonly schemas: SchemaRepository,
+    private readonly publisher: EventPublisher,
   ) {}
 
   // schemaId is not updatable via PUT — only data changes.
@@ -33,6 +35,7 @@ export class UpdateEntry {
     };
 
     await this.entries.save(updated);
+    this.publisher.publish({ type: 'entry.updated', entry: updated });
     return updated;
   }
 }

@@ -30,17 +30,17 @@ describe('GET /events', () => {
     publisher = new SseEventPublisher();
     const app = createServer({
       schema: {
-        createSchema: new CreateSchema(schemaRepo),
+        createSchema: new CreateSchema(schemaRepo, publisher),
         listSchemas: new ListSchemas(schemaRepo),
-        updateSchema: new UpdateSchema(schemaRepo),
-        deleteSchema: new DeleteSchema(schemaRepo),
+        updateSchema: new UpdateSchema(schemaRepo, publisher),
+        deleteSchema: new DeleteSchema(schemaRepo, publisher),
       },
       entry: {
-        createEntry: new CreateEntry(entryRepo, schemaRepo),
+        createEntry: new CreateEntry(entryRepo, schemaRepo, publisher),
         listEntries: new ListEntries(entryRepo),
         getEntry: new GetEntry(entryRepo),
-        updateEntry: new UpdateEntry(entryRepo, schemaRepo),
-        deleteEntry: new DeleteEntry(entryRepo),
+        updateEntry: new UpdateEntry(entryRepo, schemaRepo, publisher),
+        deleteEntry: new DeleteEntry(entryRepo, publisher),
       },
       content: {
         listContent: new ListContent(schemaRepo, entryRepo),
