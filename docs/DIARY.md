@@ -293,3 +293,32 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   hardcoded a client-supplied field id to read the generated id back off the created
   schema instead. 90 backend tests green; `tsc` clean.
 - **Next:** none — resumes wherever `2.3` left off.
+
+### [2026-06-23] 2.3 — `useRealtime()` hook + SSE client adapter
+- **Did:** `infrastructure/realtime/SseClient.ts` (adapter): wraps `EventSource`,
+  lazily opens the connection on first `subscribe(listener)`, parses each message
+  as a `DomainEvent`, fans out to all listeners, closes the connection once the
+  last listener unsubscribes. `infrastructure/ui/react/providers/RealtimeProvider.tsx`
+  exposes an injected `SseClient` via context (`useRealtimeClient()`).
+  `infrastructure/ui/react/hooks/useRealtime.ts` reads the client from context and
+  subscribes/unsubscribes a caller-supplied `onEvent` callback in a `useEffect`.
+  `domain/events/DomainEvent.ts` re-exports the shared type, mirroring the backend.
+- **Decisions:** Backlog orders `2.3` before `3.2` (TanStack Query), so there is no
+  query client yet to invalidate. `useRealtime(onEvent)` stays generic — it takes a
+  plain callback rather than calling `queryClient.invalidateQueries` directly; `3.2`
+  will pass an invalidation callback once the query layer exists. The provider takes
+  an already-constructed `SseClient` as a prop rather than building one itself, so
+  the composition root (still to be wired into `main.tsx` in a later task) stays the
+  only place that does `new SseClient()`. Found `frontend/.swcrc` had no TypeScript
+  parser config (`jsc.parser` was unset, so `@swc/jest` failed on any `.ts`/`.tsx`
+  syntax) and `frontend/src/test/setup.ts` was missing despite being referenced by
+  `jest.config.ts` — both pre-existing gaps, fixed as prerequisites for any frontend
+  test to run at all.
+- **Tests:** `SseClient.test.ts` — lazy connect, multi-listener fan-out, per-listener
+  unsubscribe, connection close on last unsubscribe, reconnect after close, via a fake
+  `EventSource`. `useRealtime.test.tsx` — subscribes through context, forwards events
+  to `onEvent`, unsubscribes on unmount, throws outside a `RealtimeProvider`. 9
+  frontend tests green; `tsc -b frontend` clean.
+- **Next:** `3.1` routing, then `3.2` TanStack Query data layer — mounts
+  `RealtimeProvider` in `main.tsx` and wires `useRealtime()` to
+  `queryClient.invalidateQueries`.
