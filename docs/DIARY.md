@@ -322,3 +322,35 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
 - **Next:** `3.1` routing, then `3.2` TanStack Query data layer — mounts
   `RealtimeProvider` in `main.tsx` and wires `useRealtime()` to
   `queryClient.invalidateQueries`.
+
+### [2026-06-23] 3.1 — Routing: schema list / schema editor / entry list / entry editor
+- **Did:** Added `react-router-dom` and wired 6 routes over 4 stub pages in
+  `infrastructure/ui/react/pages/`: `SchemaListPage` (`/schemas`),
+  `SchemaEditorPage` (`/schemas/new`, `/schemas/:schemaId/edit`),
+  `EntryListPage` (`/schemas/:schemaId/entries`), `EntryEditorPage`
+  (`/schemas/:schemaId/entries/new`, `/schemas/:schemaId/entries/:entryId/edit`);
+  `/` redirects to `/schemas`. Moved `App.tsx` from `src/` into
+  `infrastructure/ui/App.tsx` per the documented layout (it had never been
+  relocated when that folder was scaffolded) and split the route table into
+  `infrastructure/ui/AppRoutes.tsx` so it can be rendered without `BrowserRouter`
+  in tests. Dropped the leftover Vite template markup/assets (`App.css`,
+  `hero.png`, `react.svg`, `vite.svg`) — no longer referenced once `App.tsx`
+  became the router root. Imported design from claude.ai/design
+  (`CMS Admin Panel.dc.html`) as the visual reference for later tasks; this task
+  only takes the page/route names and structure from it, not its inline-styled
+  markup or its view-switching-via-state approach (incompatible with
+  `css-conventions`/real routing) or its embedded evolution logic (belongs in
+  `shared/src/evolution/`, not a component).
+- **Decisions:** Pages are thin stubs (heading only) — porting the design's
+  visuals and wiring real data is explicit follow-up work (3.2+), not part of
+  routing. The "Live Sync Demo" panel from the design (manually simulated
+  events) is dropped rather than ported: real SSE via `useRealtime` already
+  exists from `2.3`. Added `@types/node` (devDependency only) and `"node"` to
+  `tsconfig.app.json`'s `types` so `src/test/setup.ts` could polyfill
+  `TextEncoder`/`TextDecoder`, which `jest-environment-jsdom` doesn't provide
+  and `react-router` v7 requires at import time.
+- **Tests:** `AppRoutes.test.tsx` renders at each of the 7 paths (including `/`)
+  via `MemoryRouter` and asserts the matching page's heading. 16 frontend tests
+  green; `tsc -p tsconfig.app.json --noEmit` and `npm run build` clean.
+- **Next:** `3.2` — TanStack Query data layer over the HTTP repositories; mount
+  `RealtimeProvider` in `main.tsx`.
