@@ -2,9 +2,11 @@ import type { Field, FieldType } from '@cms/shared';
 
 const FIELD_TYPES: FieldType[] = ['text', 'number', 'boolean', 'date', 'reference'];
 
+export type FieldInput = Omit<Field, 'id'> & { id?: string };
+
 export interface SchemaInputShape {
   name: string;
-  fields: Field[];
+  fields: FieldInput[];
 }
 
 export function validateSchemaInput(input: SchemaInputShape): string[] {

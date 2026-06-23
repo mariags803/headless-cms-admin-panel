@@ -12,34 +12,35 @@ describe('UpdateEntry', () => {
     const entryRepo = new InMemoryEntryRepository();
     const schema = await new CreateSchema(schemaRepo, new InMemoryEventPublisher()).execute({
       name: 'Car',
-      fields: [{ id: 'f-brand', name: 'brand', type: 'text', required: true }],
+      fields: [{ name: 'brand', type: 'text', required: true } as never],
     });
+    const fieldId = schema.fields[0].id;
     const entry = await new CreateEntry(entryRepo, schemaRepo, new InMemoryEventPublisher()).execute({
       schemaId: schema.id,
-      data: { 'f-brand': 'Toyota' },
+      data: { [fieldId]: 'Toyota' },
     });
-    return { schemaRepo, entryRepo, schema, entry };
+    return { schemaRepo, entryRepo, schema, entry, fieldId };
   }
 
   it('replaces data and bumps updatedAt, keeping schemaId/createdAt', async () => {
-    const { schemaRepo, entryRepo, entry } = await setup();
+    const { schemaRepo, entryRepo, entry, fieldId } = await setup();
     const useCase = new UpdateEntry(entryRepo, schemaRepo, new InMemoryEventPublisher());
 
-    const updated = await useCase.execute({ id: entry.id, data: { 'f-brand': 'Honda' } });
+    const updated = await useCase.execute({ id: entry.id, data: { [fieldId]: 'Honda' } });
 
     expect(updated.id).toBe(entry.id);
     expect(updated.schemaId).toBe(entry.schemaId);
     expect(updated.createdAt).toBe(entry.createdAt);
-    expect(updated.data).toEqual({ 'f-brand': 'Honda' });
+    expect(updated.data).toEqual({ [fieldId]: 'Honda' });
     expect(updated.updatedAt >= entry.createdAt).toBe(true);
   });
 
   it('publishes an entry.updated event', async () => {
-    const { schemaRepo, entryRepo, entry } = await setup();
+    const { schemaRepo, entryRepo, entry, fieldId } = await setup();
     const publisher = new InMemoryEventPublisher();
     const useCase = new UpdateEntry(entryRepo, schemaRepo, publisher);
 
-    const updated = await useCase.execute({ id: entry.id, data: { 'f-brand': 'Honda' } });
+    const updated = await useCase.execute({ id: entry.id, data: { [fieldId]: 'Honda' } });
 
     expect(publisher.events).toEqual([{ type: 'entry.updated', entry: updated }]);
   });

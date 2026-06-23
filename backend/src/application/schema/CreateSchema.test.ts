@@ -11,12 +11,37 @@ describe('CreateSchema', () => {
 
     const schema = await useCase.execute({
       name: 'Car',
-      fields: [{ id: 'f1', name: 'brand', type: 'text', required: true }],
+      fields: [{ name: 'brand', type: 'text', required: true } as never],
     });
 
     expect(schema.id).toBeTruthy();
     expect(schema.createdAt).toBe(schema.updatedAt);
     expect(await repo.findById(schema.id)).toEqual(schema);
+  });
+
+  it('generates a field id when the client sends none', async () => {
+    const repo = new InMemorySchemaRepository();
+    const useCase = new CreateSchema(repo, new InMemoryEventPublisher());
+
+    const schema = await useCase.execute({
+      name: 'Car',
+      fields: [{ name: 'brand', type: 'text', required: true } as never],
+    });
+
+    expect(schema.fields[0].id).toBeTruthy();
+  });
+
+  it('ignores a client-supplied field id and generates its own', async () => {
+    const repo = new InMemorySchemaRepository();
+    const useCase = new CreateSchema(repo, new InMemoryEventPublisher());
+
+    const schema = await useCase.execute({
+      name: 'Car',
+      fields: [{ id: 'client-fake', name: 'brand', type: 'text', required: true }],
+    });
+
+    expect(schema.fields[0].id).toBeTruthy();
+    expect(schema.fields[0].id).not.toBe('client-fake');
   });
 
   it('publishes a schema.created event', async () => {
@@ -69,18 +94,4 @@ describe('CreateSchema', () => {
     ).rejects.toBeInstanceOf(InvalidSchema);
   });
 
-  it('rejects duplicate field ids', async () => {
-    const repo = new InMemorySchemaRepository();
-    const useCase = new CreateSchema(repo, new InMemoryEventPublisher());
-
-    await expect(
-      useCase.execute({
-        name: 'Car',
-        fields: [
-          { id: 'f1', name: 'brand', type: 'text', required: true },
-          { id: 'f1', name: 'model', type: 'text', required: true },
-        ],
-      }),
-    ).rejects.toBeInstanceOf(InvalidSchema);
-  });
 });

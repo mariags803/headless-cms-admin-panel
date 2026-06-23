@@ -2,12 +2,12 @@ import { randomUUID } from 'node:crypto';
 import type { Field, Schema } from '@cms/shared';
 import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { InvalidSchema } from '../../domain/schema/SchemaErrors';
-import { validateSchemaInput } from './validateSchemaInput';
+import { validateSchemaInput, type FieldInput } from './validateSchemaInput';
 import type { EventPublisher } from '../ports/EventPublisher';
 
 export interface NewSchemaInput {
   name: string;
-  fields?: Field[];
+  fields?: FieldInput[];
 }
 
 export class CreateSchema {
@@ -17,7 +17,8 @@ export class CreateSchema {
   ) {}
 
   async execute(input: NewSchemaInput): Promise<Schema> {
-    const fields = input.fields ?? [];
+    // every field is new on creation — id is always server-generated, never trusted from the client.
+    const fields: Field[] = (input.fields ?? []).map((field) => ({ ...field, id: randomUUID() }));
     const errors = validateSchemaInput({ name: input.name, fields });
     if (errors.length) throw new InvalidSchema(errors);
 

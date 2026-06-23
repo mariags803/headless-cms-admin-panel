@@ -56,7 +56,7 @@ describe('EntryController', () => {
 
   const carSchemaPayload = {
     name: 'Car',
-    fields: [{ id: 'f-brand', name: 'brand', type: 'text', required: true }],
+    fields: [{ name: 'brand', type: 'text', required: true }],
   };
 
   async function createSchema() {
@@ -83,12 +83,12 @@ describe('EntryController', () => {
 
     const res = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBeTruthy();
     expect(res.body.schemaId).toBe(schema.id);
-    expect(res.body.data).toEqual({ 'f-brand': 'Toyota' });
+    expect(res.body.data).toEqual({ [schema.fields[0].id]: 'Toyota' });
   });
 
   it('POST /entries with a missing required field returns 400', async () => {
@@ -111,20 +111,20 @@ describe('EntryController', () => {
 
   it('GET /entries?schema= returns entries for that schema', async () => {
     const schema = await createSchema();
-    await request(app).post('/entries').send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+    await request(app).post('/entries').send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const res = await request(app).get('/entries').query({ schema: schema.id });
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].data).toEqual({ 'f-brand': 'Toyota' });
+    expect(res.body[0].data).toEqual({ [schema.fields[0].id]: 'Toyota' });
   });
 
   it('GET /entries/:id returns the entry', async () => {
     const schema = await createSchema();
     const created = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const res = await request(app).get(`/entries/${created.body.id}`);
 
@@ -143,15 +143,15 @@ describe('EntryController', () => {
     const schema = await createSchema();
     const created = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const res = await request(app)
       .put(`/entries/${created.body.id}`)
-      .send({ data: { 'f-brand': 'Honda' } });
+      .send({ data: { [schema.fields[0].id]: 'Honda' } });
 
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(created.body.id);
-    expect(res.body.data).toEqual({ 'f-brand': 'Honda' });
+    expect(res.body.data).toEqual({ [schema.fields[0].id]: 'Honda' });
   });
 
   it('PUT /entries/:id on an unknown id returns 404', async () => {
@@ -165,7 +165,7 @@ describe('EntryController', () => {
     const schema = await createSchema();
     const created = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const res = await request(app).put(`/entries/${created.body.id}`).send({ data: {} });
 
@@ -177,7 +177,7 @@ describe('EntryController', () => {
     const schema = await createSchema();
     const created = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const del = await request(app).delete(`/entries/${created.body.id}`);
     expect(del.status).toBe(204);

@@ -12,16 +12,16 @@ describe('CreateEntry', () => {
     const entryRepo = new InMemoryEntryRepository();
     const schema = await new CreateSchema(schemaRepo, new InMemoryEventPublisher()).execute({
       name: 'Car',
-      fields: [{ id: 'f-brand', name: 'brand', type: 'text', required: true }],
+      fields: [{ name: 'brand', type: 'text', required: true } as never],
     });
-    return { schemaRepo, entryRepo, schema };
+    return { schemaRepo, entryRepo, schema, fieldId: schema.fields[0].id };
   }
 
   it('creates an entry with generated id and matching createdAt/updatedAt', async () => {
-    const { schemaRepo, entryRepo, schema } = await setup();
+    const { schemaRepo, entryRepo, schema, fieldId } = await setup();
     const useCase = new CreateEntry(entryRepo, schemaRepo, new InMemoryEventPublisher());
 
-    const entry = await useCase.execute({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+    const entry = await useCase.execute({ schemaId: schema.id, data: { [fieldId]: 'Toyota' } });
 
     expect(entry.id).toBeTruthy();
     expect(entry.schemaId).toBe(schema.id);
@@ -30,11 +30,11 @@ describe('CreateEntry', () => {
   });
 
   it('publishes an entry.created event', async () => {
-    const { schemaRepo, entryRepo, schema } = await setup();
+    const { schemaRepo, entryRepo, schema, fieldId } = await setup();
     const publisher = new InMemoryEventPublisher();
     const useCase = new CreateEntry(entryRepo, schemaRepo, publisher);
 
-    const entry = await useCase.execute({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+    const entry = await useCase.execute({ schemaId: schema.id, data: { [fieldId]: 'Toyota' } });
 
     expect(publisher.events).toEqual([{ type: 'entry.created', entry }]);
   });

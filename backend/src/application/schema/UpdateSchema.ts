@@ -1,13 +1,14 @@
+import { randomUUID } from 'node:crypto';
 import type { Field, Schema } from '@cms/shared';
 import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { InvalidSchema, SchemaNotFound } from '../../domain/schema/SchemaErrors';
-import { validateSchemaInput } from './validateSchemaInput';
+import { validateSchemaInput, type FieldInput } from './validateSchemaInput';
 import type { EventPublisher } from '../ports/EventPublisher';
 
 export interface UpdateSchemaInput {
   id: string;
   name: string;
-  fields: Field[];
+  fields: FieldInput[];
 }
 
 export class UpdateSchema {
@@ -22,13 +23,16 @@ export class UpdateSchema {
     const existing = await this.schemas.findById(input.id);
     if (!existing) throw new SchemaNotFound(input.id);
 
-    const errors = validateSchemaInput({ name: input.name, fields: input.fields });
+    // existing fields echo back their id (kept stable for rename-safety);
+    // newly added fields arrive without one and get generated here.
+    const fields: Field[] = input.fields.map((field) => ({ ...field, id: field.id ?? randomUUID() }));
+    const errors = validateSchemaInput({ name: input.name, fields });
     if (errors.length) throw new InvalidSchema(errors);
 
     const updated: Schema = {
       ...existing,
       name: input.name,
-      fields: input.fields,
+      fields,
       updatedAt: new Date().toISOString(),
     };
 

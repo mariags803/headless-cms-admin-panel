@@ -56,7 +56,7 @@ describe('SchemaController', () => {
 
   const carPayload = {
     name: 'Car',
-    fields: [{ id: 'f1', name: 'brand', type: 'text', required: true }],
+    fields: [{ name: 'brand', type: 'text', required: true }],
   };
 
   it('POST /schemas creates a schema', async () => {
@@ -67,6 +67,7 @@ describe('SchemaController', () => {
     expect(res.body.createdAt).toBeTruthy();
     expect(res.body.updatedAt).toBeTruthy();
     expect(res.body.name).toBe('Car');
+    expect(res.body.fields[0].id).toBeTruthy();
   });
 
   it('POST /schemas with missing name returns 400', async () => {
@@ -98,12 +99,13 @@ describe('SchemaController', () => {
 
     const res = await request(app)
       .put(`/schemas/${created.body.id}`)
-      .send({ name: 'Car (used)', fields: carPayload.fields });
+      .send({ name: 'Car (used)', fields: created.body.fields });
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Car (used)');
     expect(res.body.id).toBe(created.body.id);
     expect(res.body.updatedAt >= created.body.updatedAt).toBe(true);
+    expect(res.body.fields[0].id).toBe(created.body.fields[0].id);
   });
 
   it('PUT /schemas/:id on an unknown id returns 404', async () => {

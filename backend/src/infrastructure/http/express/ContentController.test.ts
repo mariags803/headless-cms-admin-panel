@@ -56,7 +56,7 @@ describe('ContentController', () => {
 
   const carSchemaPayload = {
     name: 'Car',
-    fields: [{ id: 'f-brand', name: 'brand', type: 'text', required: true }],
+    fields: [{ name: 'brand', type: 'text', required: true }],
   };
 
   async function createSchema() {
@@ -66,7 +66,7 @@ describe('ContentController', () => {
 
   it('GET /api/content/:schema resolves field ids to names', async () => {
     const schema = await createSchema();
-    await request(app).post('/entries').send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+    await request(app).post('/entries').send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const res = await request(app).get(`/api/content/${schema.name}`);
 
@@ -86,7 +86,7 @@ describe('ContentController', () => {
     const schema = await createSchema();
     const created = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
 
     const res = await request(app).get(`/api/content/${schema.name}/${created.body.id}`);
 
@@ -107,7 +107,7 @@ describe('ContentController', () => {
     const schema = await createSchema();
     const created = await request(app)
       .post('/entries')
-      .send({ schemaId: schema.id, data: { 'f-brand': 'Toyota' } });
+      .send({ schemaId: schema.id, data: { [schema.fields[0].id]: 'Toyota' } });
     const otherSchema = await request(app)
       .post('/schemas')
       .send({ name: 'Person', fields: [] });

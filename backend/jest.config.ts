@@ -5,4 +5,5 @@ export default {
   moduleNameMapper: {
     '^@cms/shared$': '<rootDir>/../shared/src/index.ts'
   },
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
 };

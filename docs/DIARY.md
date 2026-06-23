@@ -270,3 +270,26 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   publisher. 86 backend tests green (up from 84); `tsc --noEmit` clean.
 - **Next:** `2.3` — `useRealtime()` hook in the front-end, wired to query
   invalidation on incoming `DomainEvent`s.
+
+### [2026-06-23] fix — field.id must be server-generated, never trusted from the client
+- **Did:** `validateSchemaInput.ts` was rejecting `POST /schemas` whenever a field
+  arrived without an `id`, the opposite of the contract's intent (`field.id` is
+  infrastructure, not user input). Fixed at the two places fields get an id:
+  `CreateSchema` now always assigns a fresh `randomUUID()` to every incoming field,
+  discarding any client-sent id; `UpdateSchema` preserves an existing id (so renames
+  stay rename-safe) and generates one only for fields that arrive without one
+  (newly added in the edit form). New `FieldInput = Omit<Field, 'id'> & { id?: string }`
+  type in `validateSchemaInput.ts` makes `id` optional on input across both use cases.
+  Checked entries for the same bug — none found: `Entry.id` was already
+  server-generated, and `entry.data` only ever references existing field ids.
+- **Decisions:** None beyond the above — this restores the existing
+  `randomUUID()`-on-create pattern already used for `Schema.id`/`Entry.id` rather
+  than introducing a new approach.
+- **Tests:** Added cases for id-omitted and client-supplied-but-ignored ids on
+  create, and id-preserved-across-rename / id-generated-for-new-field on update, plus
+  a duplicate-field-id rejection test moved to `UpdateSchema.test.ts` (no longer
+  reachable through `CreateSchema` once ids are always server-generated). Updated all
+  call sites across `application/` and `infrastructure/http` test suites that
+  hardcoded a client-supplied field id to read the generated id back off the created
+  schema instead. 90 backend tests green; `tsc` clean.
+- **Next:** none — resumes wherever `2.3` left off.
