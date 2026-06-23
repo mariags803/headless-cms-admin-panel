@@ -24,11 +24,15 @@ repeat their own slice.
 - 3.2 Data layer (TanStack Query) over the HTTP repositories + realtime invalidation.
 
 **Phase 4 — Schema builder (A)**
-- 4.1 Schema list. 4.2 Schema form (add/remove/reorder fields). 4.3 Reference target picker.
+- 4.1 Schema list. 
+- 4.2 Schema form (add/remove/reorder fields). 
+- 4.3 Reference target picker.
 
 **Phase 5 — Dynamic entry editor (B)**
-- 5.1 Field registry. 5.2 Entry table per schema. 5.3 Schema-generated form.
-  5.4 Reference field: target dropdown + jump-to-entry link.
+- 5.1 Field registry. 
+- 5.2 Entry table per schema. 
+- 5.3 Schema-generated form. 
+- 5.4 Reference field: target dropdown + jump-to-entry link.
 
 **Phase 6 — Schema evolution (D) — the centerpiece**
 - 6.1 `diffSchemas` + `classifyRisk` (TDD in `shared/`).
