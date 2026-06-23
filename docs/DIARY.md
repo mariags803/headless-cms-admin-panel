@@ -439,3 +439,35 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
 - **Tests:** 57 frontend tests still green, unchanged. `tsc -p tsconfig.app.json
   --noEmit` and `npm run build -w frontend` now both clean.
 - **Next:** `4.2` — schema form (add/remove/reorder fields).
+
+### [2026-06-23] 4.2 — Schema form (add/remove/reorder fields)
+- **Did:** `SchemaEditorPage` is now a real form (was a title-only stub) serving both
+  `/schemas/new` and `/schemas/:schemaId/edit`. Extracted a controlled
+  `SchemaFieldRow` component (`infrastructure/ui/react/components/`) for the
+  repeating field unit: name/type/required inputs, a reference-target `<select>`
+  shown only for `type === 'reference'` (sourced from `useSchemas()`, full
+  picker UX deferred to `4.3`), and move-up/move-down/remove controls (no
+  drag-and-drop dependency). Edit mode seeds the form from `useSchema(schemaId)`
+  once via a ref guarded on `schema.id`; submit wires to `useCreateSchema` /
+  `useUpdateSchema` and navigates to `/schemas` on success.
+- **Decisions:** Field `id` is assigned server-side (confirmed in
+  `CreateSchema.ts`/`UpdateSchema.ts`), so the form keeps `id` on fields loaded
+  from an existing schema and omits it on newly-added ones; widened the
+  `NewSchemaInput`/`SchemaUpdateInput` `fields` type in
+  `domain/schema/SchemaRepository.ts` from `Schema['fields']` (`Field[]`, `id`
+  required) to a new `FieldInput = Omit<Field, 'id'> & { id?: string }`, matching
+  the backend's actual wire contract — the old type was simply wrong and only
+  surfaced once this task tried to send a fieldless-id payload. Added light
+  client-side validation (schema name required, field name required, no
+  duplicate field names) on submit only; this is UX sugar, not the source of
+  truth — the server still re-validates.
+- **Tests:** New `SchemaFieldRow.test.tsx` (rendering, onChange payloads,
+  reference-select visibility, move/remove button behavior incl. boundary
+  disabling, `toFieldPayload` id-omission rules) and `SchemaEditorPage.test.tsx`
+  (new/edit mode rendering, add/remove/reorder, validation blocking submit,
+  create/update payload shape incl. id handling, navigation on success,
+  mutation-error alert, pending/disabled Save button). Updated
+  `AppRoutes.test.tsx`'s fake `getSchema` use case, which previously had no
+  `execute` — harmless against the old stub page, but the real form now awaits
+  it. 81 frontend tests green; `npm run build -w frontend` clean.
+- **Next:** `4.3` — reference target picker.

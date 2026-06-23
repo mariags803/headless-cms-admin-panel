@@ -1,13 +1,15 @@
-import type { Schema } from '@cms/shared';
+import type { Field, Schema } from '@cms/shared';
+
+export type FieldInput = Omit<Field, 'id'> & { id?: string };
 
 export interface NewSchemaInput {
   name: string;
-  fields: Schema['fields'];
+  fields: FieldInput[];
 }
 
 export interface SchemaUpdateInput {
   name: string;
-  fields: Schema['fields'];
+  fields: FieldInput[];
 }
 
 export interface SchemaRepository {

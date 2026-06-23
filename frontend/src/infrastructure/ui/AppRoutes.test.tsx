@@ -7,7 +7,15 @@ import { AppRoutes } from './AppRoutes'
 function fakeUseCases(): UseCases {
   return {
     listSchemas: { execute: jest.fn().mockResolvedValue([]) } as never,
-    getSchema: {} as never,
+    getSchema: {
+      execute: jest.fn().mockResolvedValue({
+        id: 'car',
+        name: 'Car',
+        fields: [],
+        createdAt: '',
+        updatedAt: '',
+      }),
+    } as never,
     createSchema: {} as never,
     updateSchema: {} as never,
     deleteSchema: {} as never,
@@ -46,9 +54,9 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: 'New Content Type' })).toBeInTheDocument()
   })
 
-  it('renders SchemaEditorPage at /schemas/:schemaId/edit', () => {
+  it('renders SchemaEditorPage at /schemas/:schemaId/edit', async () => {
     renderAt('/schemas/car/edit')
-    expect(screen.getByRole('heading', { name: 'Edit Content Type' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Edit Content Type' })).toBeInTheDocument()
   })
 
   it('renders EntryListPage at /schemas/:schemaId/entries', () => {
