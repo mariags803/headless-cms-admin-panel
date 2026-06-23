@@ -188,3 +188,33 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   confirmed 404 after delete.
 - **Next:** Task 1.3 — Read API (E): `GET /api/content/:schema`, `/:schema/:id`
   (resolve `fieldId → name`).
+
+### [2026-06-23] 1.3 — Read API (E) (`GET /api/content/:schema`, `/:schema/:id`)
+- **Did:** `domain/schema/SchemaRepository` gained `findByName(name)`, implemented in
+  `InMemorySchemaRepository` (linear scan) and `SqliteSchemaRepository`
+  (`WHERE name = ?`) — `:schema` in the path is the schema *name*, not its id. New
+  `application/content/`: `resolveEntryData(schema, entry)` (pure, TDD'd: maps each
+  `field.id` key in `entry.data` to `field.name`, defaulting a missing value to
+  `null`), `ListContent` and `GetContentEntry` use cases that look up the schema by
+  name, fetch entries/entry, and layer `resolveEntryData` over the result.
+  `infrastructure/http/express/ContentController` mounted at `/api/content` —
+  `GET /:schema` → `ListContent`, `GET /:schema/:id` → `GetContentEntry`; both thin,
+  errors forwarded to the existing `errorHandler`. `server.ts`/`main.ts` extended with
+  the new `content` deps.
+- **Decisions:** Resolution lives in `application/content/`, not directly in the
+  controller — keeps it unit-testable against the in-memory fakes like every other
+  use case, while still never touching the domain (`Entry`/`Schema` stay id-keyed).
+  `GetContentEntry` 404s (`EntryNotFound`) when the entry exists but belongs to a
+  different schema than the one named in the path, not just when the id is unknown —
+  the Read API URL implies that scoping. `ListContent`/`GetContentEntry` both 404
+  (`SchemaNotFound`) for an unknown schema name, unlike `GET /entries?schema=` in 1.2
+  which returns `200 []` — here the schema name is the primary path resource, not a
+  filter.
+- **Tests:** `resolveEntryData` unit tests (mapping + missing-value default);
+  `ListContent`/`GetContentEntry` against the in-memory fakes (happy path, unknown
+  schema, unknown entry, cross-schema entry); `SqliteSchemaRepository.findByName`
+  added to its existing suite; `ContentController` via supertest against the real use
+  cases + SQLite repos. 76 backend tests total (up from 61), all green; manual `curl`
+  acceptance check against a running server confirmed JSON keys are field names
+  (`{"data":{"brand":"Toyota"}}`) and a 404 for an unknown schema name.
+- **Next:** Phase 2 — `2.1` SSE endpoint `/events` + `EventPublisher` port & adapter.

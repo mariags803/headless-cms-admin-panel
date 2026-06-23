@@ -41,6 +41,17 @@ describe('SqliteSchemaRepository', () => {
     expect(await repo.findById('missing')).toBeNull();
   });
 
+  it('finds a schema by name', async () => {
+    const schema = makeSchema();
+    await repo.save(schema);
+
+    expect(await repo.findByName('Car')).toEqual(schema);
+  });
+
+  it('returns null for a missing name', async () => {
+    expect(await repo.findByName('missing')).toBeNull();
+  });
+
   it('returns multiple saved schemas via findAll', async () => {
     await repo.save(makeSchema({ id: 'schema-1', name: 'Car' }));
     await repo.save(makeSchema({ id: 'schema-2', name: 'Person' }));

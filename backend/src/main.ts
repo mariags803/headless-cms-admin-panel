@@ -10,6 +10,8 @@ import { ListEntries } from './application/entry/ListEntries';
 import { GetEntry } from './application/entry/GetEntry';
 import { UpdateEntry } from './application/entry/UpdateEntry';
 import { DeleteEntry } from './application/entry/DeleteEntry';
+import { ListContent } from './application/content/ListContent';
+import { GetContentEntry } from './application/content/GetContentEntry';
 import { createServer } from './infrastructure/http/express/server';
 
 const db = createDb(process.env.DB_FILE ?? 'cms.sqlite3');
@@ -29,6 +31,10 @@ const app = createServer({
     getEntry: new GetEntry(entryRepo),
     updateEntry: new UpdateEntry(entryRepo, schemaRepo),
     deleteEntry: new DeleteEntry(entryRepo),
+  },
+  content: {
+    listContent: new ListContent(schemaRepo, entryRepo),
+    getContentEntry: new GetContentEntry(schemaRepo, entryRepo),
   },
 });
 

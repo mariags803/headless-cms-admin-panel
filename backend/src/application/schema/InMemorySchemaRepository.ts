@@ -12,6 +12,10 @@ export class InMemorySchemaRepository implements SchemaRepository {
     return this.store.get(id) ?? null;
   }
 
+  async findByName(name: string): Promise<Schema | null> {
+    return [...this.store.values()].find((schema) => schema.name === name) ?? null;
+  }
+
   async save(schema: Schema): Promise<void> {
     this.store.set(schema.id, schema);
   }

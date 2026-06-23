@@ -33,6 +33,11 @@ export class SqliteSchemaRepository implements SchemaRepository {
     return row ? toSchema(row) : null;
   }
 
+  async findByName(name: string): Promise<Schema | null> {
+    const row = this.db.prepare('SELECT * FROM schemas WHERE name = ?').get(name) as SchemaRow | undefined;
+    return row ? toSchema(row) : null;
+  }
+
   async save(schema: Schema): Promise<void> {
     this.db
       .prepare(
