@@ -103,3 +103,18 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   cross-file imports use `import type` per `verbatimModuleSyntax`.
 - **Tests:** none — types only, no logic to test.
 - **Next:** Task 0.3 — SQLite init + migrations.
+
+### [2026-06-23] 0.3 — SQLite init + migrations
+- **Did:** Added `infrastructure/persistence/sqlite/db.ts`: `createDb(filename)` opens
+  a `better-sqlite3` connection, turns on `PRAGMA foreign_keys`, and runs the
+  `schemas`/`entries` migration (JSON columns, FK with `ON DELETE CASCADE`,
+  `idx_entries_schema` index) from `backend/CLAUDE.md`. Added the missing
+  `src/test/setup.ts` referenced by `jest.config.ts`.
+- **Decisions:** Scoped strictly to db init + migrations — repositories
+  (`SqliteSchemaRepository`/`SqliteEntryRepository`) and their ports are deferred to
+  tasks 1.1+, per the backend task list, so this stays one task = one commit.
+- **Tests:** `db.test.ts` against `:memory:` — both tables exist, the index exists,
+  deleting a schema cascades to its entries, and inserting an entry with a
+  non-existent `schema_id` throws (proves `PRAGMA foreign_keys` actually took effect,
+  since SQLite defaults it off).
+- **Next:** Task 1.1 — Schemas CRUD endpoints (`GET/POST/PUT/DELETE /schemas`).
