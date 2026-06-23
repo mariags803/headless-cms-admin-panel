@@ -218,3 +218,33 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   acceptance check against a running server confirmed JSON keys are field names
   (`{"data":{"brand":"Toyota"}}`) and a 404 for an unknown schema name.
 - **Next:** Phase 2 — `2.1` SSE endpoint `/events` + `EventPublisher` port & adapter.
+
+### [2026-06-23] 2.1 — SSE endpoint + EventPublisher port & adapter
+- **Did:** Added the real-time plumbing only — no use case publishes yet (that's
+  2.2). `application/ports/EventPublisher.ts` defines the output port
+  (`publish(event: DomainEvent): void`); `domain/events/DomainEvent.ts` re-exports
+  the shared contract type, matching the existing `domain/schema/Schema.ts`
+  pattern. `infrastructure/realtime/SseEventPublisher.ts` implements the port: it
+  keeps a `Set<Response>` of open connections, writes `data: <json>\n\n` to all of
+  them on `publish`, and drops a connection on its `close` event. New
+  `EventsController.ts` exposes `GET /events`, which just calls
+  `publisher.subscribe(res)`. `server.ts`/`main.ts` extended with a new `events`
+  dep, mirroring how `content` was added in 1.3.
+- **Decisions:** Kept the route un-nested under any resource router (`/events`,
+  not under `/schemas` or `/entries`) since it isn't CRUD over an aggregate — it's
+  a transport concern. The adapter owns raw Express `Response` objects directly
+  (correct per hexagonal-architecture: this is infrastructure, domain/application
+  never see it).
+- **Tests:** `SseEventPublisher.test.ts` unit tests against fake `Response`-like
+  objects (header set, broadcast to multiple subscribers, no write after
+  `close`). `EventsController.test.ts` is a real integration test: spins up the
+  Express app on an ephemeral port via `http.Server`, opens a real `GET /events`
+  connection with `http.get`, asserts the `text/event-stream` header, then calls
+  `publisher.publish(...)` directly and asserts the exact SSE-framed chunk
+  arrives on the open socket. 84 backend tests total (up from 80 — also closed a
+  pre-existing gap where `EntryController.test.ts`/`SchemaController.test.ts`
+  were missing the `content` dep required by `ServerDeps`, caught by `tsc
+  --noEmit`, which was clean before this task and is again now). All green;
+  `npm test` (shared + backend) green.
+- **Next:** `2.2` — make every mutation use case call `publish(...)` with the
+  matching `DomainEvent`.

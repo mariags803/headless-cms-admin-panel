@@ -12,11 +12,13 @@ import { UpdateEntry } from './application/entry/UpdateEntry';
 import { DeleteEntry } from './application/entry/DeleteEntry';
 import { ListContent } from './application/content/ListContent';
 import { GetContentEntry } from './application/content/GetContentEntry';
+import { SseEventPublisher } from './infrastructure/realtime/SseEventPublisher';
 import { createServer } from './infrastructure/http/express/server';
 
 const db = createDb(process.env.DB_FILE ?? 'cms.sqlite3');
 const schemaRepo = new SqliteSchemaRepository(db);
 const entryRepo = new SqliteEntryRepository(db);
+const eventPublisher = new SseEventPublisher();
 
 const app = createServer({
   schema: {
@@ -35,6 +37,9 @@ const app = createServer({
   content: {
     listContent: new ListContent(schemaRepo, entryRepo),
     getContentEntry: new GetContentEntry(schemaRepo, entryRepo),
+  },
+  events: {
+    publisher: eventPublisher,
   },
 });
 

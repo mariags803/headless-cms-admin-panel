@@ -12,6 +12,9 @@ import { ListEntries } from '../../../application/entry/ListEntries';
 import { GetEntry } from '../../../application/entry/GetEntry';
 import { UpdateEntry } from '../../../application/entry/UpdateEntry';
 import { DeleteEntry } from '../../../application/entry/DeleteEntry';
+import { ListContent } from '../../../application/content/ListContent';
+import { GetContentEntry } from '../../../application/content/GetContentEntry';
+import { SseEventPublisher } from '../../realtime/SseEventPublisher';
 import { createServer } from './server';
 
 describe('EntryController', () => {
@@ -35,6 +38,13 @@ describe('EntryController', () => {
         getEntry: new GetEntry(entryRepo),
         updateEntry: new UpdateEntry(entryRepo, schemaRepo),
         deleteEntry: new DeleteEntry(entryRepo),
+      },
+      content: {
+        listContent: new ListContent(schemaRepo, entryRepo),
+        getContentEntry: new GetContentEntry(schemaRepo, entryRepo),
+      },
+      events: {
+        publisher: new SseEventPublisher(),
       },
     });
   });

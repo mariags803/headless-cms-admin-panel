@@ -14,6 +14,7 @@ import { UpdateEntry } from '../../../application/entry/UpdateEntry';
 import { DeleteEntry } from '../../../application/entry/DeleteEntry';
 import { ListContent } from '../../../application/content/ListContent';
 import { GetContentEntry } from '../../../application/content/GetContentEntry';
+import { SseEventPublisher } from '../../realtime/SseEventPublisher';
 import { createServer } from './server';
 
 describe('ContentController', () => {
@@ -41,6 +42,9 @@ describe('ContentController', () => {
       content: {
         listContent: new ListContent(schemaRepo, entryRepo),
         getContentEntry: new GetContentEntry(schemaRepo, entryRepo),
+      },
+      events: {
+        publisher: new SseEventPublisher(),
       },
     });
   });
