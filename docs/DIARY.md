@@ -1,7 +1,7 @@
 # Development Diary
 
 Chronological log of tasks and decisions. Newest entries at the bottom of the
-log; ADRs collected at the top. See the format in `CLAUDE.md` §9.
+log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
 
 ---
 

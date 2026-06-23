@@ -149,8 +149,8 @@ Highest value, write tests first:
 
 ## Development diary — append after every task
 
-After completing any task, append an entry to `docs/DIARY.md` (format in `CLAUDE.md`
-§9): what was done, decisions, tests, next. Significant architectural choices get a
+After completing any task, append an entry to `docs/DIARY.md` (format in `docs/BACKLOG.md`
+): what was done, decisions, tests, next. Significant architectural choices get a
 numbered ADR at the top of the diary. The diary is part of the deliverable — it's the
 trail of how the work was reasoned, which is what a senior take-home is judged on.
 
