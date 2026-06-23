@@ -419,3 +419,23 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   task rather than scope creep on a list page.
 - **Next:** `4.2` — schema form (add/remove/reorder fields); separately, the
   `erasableSyntaxOnly` build break from `3.2` needs its own fix.
+
+### [2026-06-23] 3.2-fix — `erasableSyntaxOnly` build break
+- **Did:** `tsconfig.app.json` has `"erasableSyntaxOnly": true`, which rejects
+  constructor parameter properties (`constructor(private readonly x: T) {}`)
+  because they emit real assignment code (`this.x = x`), not purely-erasable type
+  syntax — `tsc -p tsconfig.app.json --noEmit` and `npm run build -w frontend` were
+  failing with `TS1294` in the 12 files from `3.2` that used the pattern: the 10
+  `application/{schema,entry}/*.ts` use cases and the 2
+  `infrastructure/http/Http{Schema,Entry}Repository.ts` adapters. Rewrote all 12 to
+  an explicit field declaration + constructor-body assignment
+  (`private readonly schemas: SchemaRepository; constructor(schemas: ...) { this.schemas = schemas; }`),
+  same mechanical transform throughout; `HttpSchemaRepository`/`HttpEntryRepository`
+  kept their `baseUrl` default value on the plain parameter.
+- **Decisions:** No behavior or public API change (`new X(repo)` call sites
+  untouched), so no new tests — the existing suite already covers these classes.
+  Found via `4.1`'s diary entry, which flagged this as a pre-existing break
+  confirmed (via `git stash`) to predate that task.
+- **Tests:** 57 frontend tests still green, unchanged. `tsc -p tsconfig.app.json
+  --noEmit` and `npm run build -w frontend` now both clean.
+- **Next:** `4.2` — schema form (add/remove/reorder fields).

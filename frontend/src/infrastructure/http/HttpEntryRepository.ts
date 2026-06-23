@@ -4,7 +4,11 @@ import type { EntryRepository, EntryUpdateInput, NewEntryInput } from '../../dom
 const DEFAULT_BASE_URL = 'http://localhost:3001';
 
 export class HttpEntryRepository implements EntryRepository {
-  constructor(private readonly baseUrl: string = DEFAULT_BASE_URL) {}
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string = DEFAULT_BASE_URL) {
+    this.baseUrl = baseUrl;
+  }
 
   async findAllBySchema(schemaId: string): Promise<Entry[]> {
     const res = await fetch(`${this.baseUrl}/entries?schema=${encodeURIComponent(schemaId)}`);

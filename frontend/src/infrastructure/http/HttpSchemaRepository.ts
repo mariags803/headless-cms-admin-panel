@@ -4,7 +4,11 @@ import type { NewSchemaInput, SchemaRepository, SchemaUpdateInput } from '../../
 const DEFAULT_BASE_URL = 'http://localhost:3001';
 
 export class HttpSchemaRepository implements SchemaRepository {
-  constructor(private readonly baseUrl: string = DEFAULT_BASE_URL) {}
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string = DEFAULT_BASE_URL) {
+    this.baseUrl = baseUrl;
+  }
 
   async findAll(): Promise<Schema[]> {
     const res = await fetch(`${this.baseUrl}/schemas`);
