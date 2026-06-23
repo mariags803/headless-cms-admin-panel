@@ -354,3 +354,36 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   green; `tsc -p tsconfig.app.json --noEmit` and `npm run build` clean.
 - **Next:** `3.2` — TanStack Query data layer over the HTTP repositories; mount
   `RealtimeProvider` in `main.tsx`.
+
+### [2026-06-23] 3.2 — Data layer (TanStack Query) over HTTP repositories + realtime invalidation
+- **Did:** Built the full client-side hexagon for `Schema`/`Entry`: domain ports
+  (`domain/{schema,entry}/*Repository.ts`), framework-free use cases
+  (`application/{schema,entry}/{List,Get,Create,Update,Delete}*.ts`), and `fetch`-based
+  adapters (`infrastructure/http/Http{Schema,Entry}Repository.ts`). Added
+  `@tanstack/react-query` and a query-hook layer
+  (`infrastructure/ui/react/hooks/use{Schemas,Schema,CreateSchema,UpdateSchema,
+  DeleteSchema,Entries,Entry,CreateEntry,UpdateEntry,DeleteEntry}.ts`) that calls the
+  use cases through a new composition-root provider (`UseCasesProvider`). Added
+  `useRealtimeInvalidation()`, which subscribes via the existing `useRealtime()` (2.3)
+  and invalidates the matching query keys per `DomainEvent` type — the piece 2.3 was
+  scaffolded for but never wired to a cache. Finally wired `QueryClientProvider`,
+  `UseCasesProvider`, `RealtimeProvider` (instantiating the real `SseClient` — left
+  unmounted since 2.3) and `useRealtimeInvalidation()` into `App.tsx`.
+- **Decisions:** There's no `GET /schemas/:id` route on the backend (only list +
+  mutate-by-id), so `HttpSchemaRepository.findById` fetches the list and filters
+  client-side rather than adding a backend endpoint out of scope for this task. Query
+  keys: `['schemas']` / `['schemas', id]` / `['entries', schemaId]` /
+  `['entries', schemaId, entryId]`. Mutations invalidate their own keys on success
+  *and* `useRealtimeInvalidation` invalidates on the matching SSE event — redundant for
+  the originating client (whose own event will also arrive), but it's what makes other
+  open clients update without a refresh, which is the point of phase C. Pages stay
+  stubs; binding them to these hooks is 4.x/5.x.
+- **Tests:** Use cases against in-memory fake repositories (no network); HTTP adapters
+  against a mocked `fetch`, including the 204-delete-has-no-body case; `UseCasesProvider`
+  context; representative query/mutation hooks (`useSchemas`, `useCreateSchema`,
+  `useEntries`, `useDeleteEntry`) via `renderHook` + `QueryClientProvider` +
+  `UseCasesProvider` with fake use cases; `useRealtimeInvalidation` for all six
+  `DomainEvent` types via the existing fake-SSE-client pattern. 49 frontend tests green;
+  `tsc -b --noEmit` clean.
+- **Next:** `4.x` — schema builder UI (list, field editor, reference picker), binding
+  `SchemaListPage`/`SchemaEditorPage` to the hooks built here.
