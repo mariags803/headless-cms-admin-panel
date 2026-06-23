@@ -387,3 +387,35 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   `tsc -b --noEmit` clean.
 - **Next:** `4.x` — schema builder UI (list, field editor, reference picker), binding
   `SchemaListPage`/`SchemaEditorPage` to the hooks built here.
+
+### [2026-06-23] 4.1 — Schema list
+- **Did:** Replaced the `SchemaListPage` stub with a real page bound to the 3.2 data
+  layer: `useSchemas()` drives loading/error/empty states and a grid of schema cards
+  (name, field count, Edit/View-entries links, Delete); `useDeleteSchema()` handles
+  removal. Added `SchemaListPage.module.css` — the first CSS Module in the repo — using
+  the existing `index.css` tokens (`--accent`, `--border`, `--shadow`, etc.) plus a new
+  spacing/radius scale (`--space-1..8`, `--radius`) added to that same file, per
+  `css-conventions`. The grid-of-cards layout and "New Content Type" CTA take their
+  shape from the imported design's `dashboard` view; its inline styles, blue/slate
+  palette, and app-wide sidebar were not ported — the sidebar is whole-app layout, out
+  of scope for a single list page, and inline styles violate the styling convention.
+- **Decisions:** Delete confirmation uses `window.confirm` rather than a new modal
+  component — the design's confirm modal is a shared component not scoped to this task;
+  `window.confirm` is the minimal accessible stand-in until a real modal is needed
+  elsewhere. New tokens were added directly to the existing `index.css` rather than
+  split into a separate `styles/tokens.css` as the skill's example layout shows —
+  splitting the whole stylesheet is an unrelated refactor. `AppRoutes.test.tsx` now
+  wraps rendered pages in `QueryClientProvider`/`UseCasesProvider` (via the existing
+  `makeWrapper` test helper) with fake use cases, since `SchemaListPage` calls data
+  hooks that need them — previously all four routed pages were dumb stubs with no
+  provider dependency.
+- **Tests:** New `SchemaListPage.test.tsx`: loading state, schema list with field
+  counts, empty state, error state, "New Content Type" link target, a card's Edit link
+  target, delete confirmed vs. declined (`window.confirm` mocked). 8 new tests; 57
+  frontend tests green overall. Found and left an unrelated, pre-existing build break:
+  `tsc` rejects constructor-parameter-property syntax under `erasableSyntaxOnly` in 12
+  `application`/`infrastructure/http` files from `3.2` — confirmed via `git stash` that
+  it predates this task and isn't touched by anything here, so fixing it is its own
+  task rather than scope creep on a list page.
+- **Next:** `4.2` — schema form (add/remove/reorder fields); separately, the
+  `erasableSyntaxOnly` build break from `3.2` needs its own fix.

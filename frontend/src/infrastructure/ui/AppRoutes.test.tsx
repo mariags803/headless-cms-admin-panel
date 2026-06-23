@@ -1,12 +1,32 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { makeWrapper } from './react/hooks/test-helpers/renderWithProviders'
+import type { UseCases } from './react/providers/UseCasesProvider'
 import { AppRoutes } from './AppRoutes'
 
+function fakeUseCases(): UseCases {
+  return {
+    listSchemas: { execute: jest.fn().mockResolvedValue([]) } as never,
+    getSchema: {} as never,
+    createSchema: {} as never,
+    updateSchema: {} as never,
+    deleteSchema: {} as never,
+    listEntries: {} as never,
+    getEntry: {} as never,
+    createEntry: {} as never,
+    updateEntry: {} as never,
+    deleteEntry: {} as never,
+  }
+}
+
 function renderAt(path: string) {
+  const { Wrapper } = makeWrapper(fakeUseCases())
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <AppRoutes />
-    </MemoryRouter>,
+    <Wrapper>
+      <MemoryRouter initialEntries={[path]}>
+        <AppRoutes />
+      </MemoryRouter>
+    </Wrapper>,
   )
 }
 
