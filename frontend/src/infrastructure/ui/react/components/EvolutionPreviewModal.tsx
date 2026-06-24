@@ -105,7 +105,9 @@ export function EvolutionPreviewModal({
         onCancel();
       }}
     >
-      <h2 id="evolution-preview-heading">Revisar cambios en {schemaName}</h2>
+      <h2 id="evolution-preview-heading" className={styles.heading}>
+        Review changes in {schemaName}
+      </h2>
 
       <ul className={styles.changeList}>
         {plan.changes.map(({ change, risk }, index) => (
@@ -119,11 +121,11 @@ export function EvolutionPreviewModal({
       </ul>
 
       {plan.affected.length > 0 && (
-        <section>
-          <h3>Entradas afectadas ({plan.affected.length})</h3>
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Affected entries ({plan.affected.length})</h3>
           {hasSuggestedFix && (
-            <button type="button" onClick={applySuggestedToAll}>
-              Aplicar conversión sugerida a todas
+            <button type="button" className={styles.applyAllButton} onClick={applySuggestedToAll}>
+              Apply the suggested conversion to all
             </button>
           )}
           <ul className={styles.affectedList}>
@@ -133,18 +135,20 @@ export function EvolutionPreviewModal({
               const missing = isMissing(entry);
               return (
                 <li key={index} className={styles.affectedRow}>
-                  <span>
-                    Entrada {entry.entryId} · campo "{fieldNames[entry.fieldId] ?? entry.fieldId}" ·
-                    valor actual: {String(entry.currentValue)}
+                  <span className={styles.affectedMeta}>
+                    Entry {entry.entryId} · field "{fieldNames[entry.fieldId] ?? entry.fieldId}" ·
+                    current valor: {String(entry.currentValue)}
                   </span>
                   {entry.coerced && (
-                    <span>
+                    <span className={styles.affectedNote}>
                       {entry.coerced.ok
-                        ? `se convertirá a ${entry.coerced.value}`
-                        : 'no se puede convertir — requiere ajuste manual'}
+                        ? `will be converted to ${entry.coerced.value}`
+                        : 'cannot be converted, requires manual adjustment'}
                     </span>
                   )}
-                  {kind === 'field.refRetargeted' && <span>se quitará la referencia salvo que elijas otra.</span>}
+                  {kind === 'field.refRetargeted' && (
+                    <span className={styles.affectedNote}>the reference will be removed unless you select another one.</span>
+                  )}
                   {kind !== 'field.removed' && field && (
                     <FieldInput
                       field={field}
@@ -161,11 +165,11 @@ export function EvolutionPreviewModal({
       )}
 
       <div className={styles.actions}>
-        <button type="button" onClick={onCancel} disabled={submitting}>
-          Cancelar
+        <button type="button" className={styles.cancelButton} onClick={onCancel} disabled={submitting}>
+          Cancel
         </button>
-        <button type="button" onClick={handleConfirm} disabled={submitting || !canConfirm}>
-          {submitting ? 'Guardando…' : 'Confirmar'}
+        <button type="button" className={styles.confirmButton} onClick={handleConfirm} disabled={submitting || !canConfirm}>
+          {submitting ? 'Saving…' : 'Confirm'}
         </button>
       </div>
     </dialog>

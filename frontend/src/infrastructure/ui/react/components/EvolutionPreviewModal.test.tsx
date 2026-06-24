@@ -35,7 +35,7 @@ describe('EvolutionPreviewModal', () => {
     );
 
     expect(screen.getByText('warning')).toHaveAttribute('data-risk', 'warning');
-    expect(screen.getByText(/year.*text a number/)).toBeInTheDocument();
+    expect(screen.getByText(/year.*text.*number/)).toBeInTheDocument();
   });
 
   it('does not render the affected section when there are no affected entries', () => {
@@ -51,7 +51,7 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    expect(screen.queryByText(/Entradas afectadas/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Affected entries/)).not.toBeInTheDocument();
   });
 
   it('shows the affected entries list with coercion outcome', () => {
@@ -75,9 +75,9 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    expect(screen.getByText(/Entradas afectadas \(2\)/)).toBeInTheDocument();
-    expect(screen.getByText(/se convertirá a 2024/)).toBeInTheDocument();
-    expect(screen.getByText(/no se puede convertir/)).toBeInTheDocument();
+    expect(screen.getByText(/Affected entries \(2\)/)).toBeInTheDocument();
+    expect(screen.getByText(/will be converted to 2024/)).toBeInTheDocument();
+    expect(screen.getByText(/cannot be converted/)).toBeInTheDocument();
   });
 
   it('disables Confirm until a non-coercible retype is fixed, then enables it once filled', () => {
@@ -98,7 +98,7 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    const confirmButton = screen.getByRole('button', { name: 'Confirmar' });
+    const confirmButton = screen.getByRole('button', { name: 'Confirm' });
     expect(confirmButton).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('year'), { target: { value: '1999' } });
@@ -106,7 +106,7 @@ describe('EvolutionPreviewModal', () => {
     expect(confirmButton).toBeEnabled();
   });
 
-  it('"Aplicar conversión sugerida a todas" fills every coercible row, and onConfirm groups values by entry', () => {
+  it('"Apply the suggested conversion to all" fills every coercible row, and onConfirm groups values by entry', () => {
     const onConfirm = jest.fn();
     const plan = makePlan({
       affected: [
@@ -126,8 +126,8 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar conversión sugerida a todas' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply the suggested conversion to all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(onConfirm).toHaveBeenCalledWith({
       e1: { f1: 2024 },
@@ -135,7 +135,7 @@ describe('EvolutionPreviewModal', () => {
     });
   });
 
-  it('calls onCancel when Cancelar is clicked', () => {
+  it('calls onCancel when Cancel is clicked', () => {
     const onCancel = jest.fn();
     render(
       <EvolutionPreviewModal
@@ -149,11 +149,11 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalled();
   });
 
-  it('calls onConfirm when Confirmar is clicked', () => {
+  it('calls onConfirm when Confirm is clicked', () => {
     const onConfirm = jest.fn();
     render(
       <EvolutionPreviewModal
@@ -167,7 +167,7 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(onConfirm).toHaveBeenCalled();
   });
 
@@ -184,7 +184,7 @@ describe('EvolutionPreviewModal', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /guardando/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
   });
 });

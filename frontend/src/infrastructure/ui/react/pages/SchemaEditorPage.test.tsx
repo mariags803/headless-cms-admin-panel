@@ -248,7 +248,7 @@ describe('SchemaEditorPage — edit mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
-    expect(await screen.findByRole('heading', { name: /revisar cambios/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /review changes/i })).toBeInTheDocument();
     expect(useCases.updateSchema.execute).not.toHaveBeenCalled();
   });
 
@@ -263,8 +263,8 @@ describe('SchemaEditorPage — edit mode', () => {
     await screen.findByLabelText(/^name$/i);
     fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    await screen.findByRole('heading', { name: /revisar cambios/i });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+    await screen.findByRole('heading', { name: /review changes/i });
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() =>
       expect(useCases.applyEvolution.execute).toHaveBeenCalledWith('s1', {
@@ -286,11 +286,11 @@ describe('SchemaEditorPage — edit mode', () => {
     await screen.findByLabelText(/^name$/i);
     fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    await screen.findByRole('heading', { name: /revisar cambios/i });
-    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+    await screen.findByRole('heading', { name: /review changes/i });
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('boom');
-    expect(screen.queryByRole('heading', { name: /revisar cambios/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /review changes/i })).not.toBeInTheDocument();
   });
 
   it('sends the affected entry correction together with the schema update in one call when retyping a field', async () => {
@@ -305,9 +305,9 @@ describe('SchemaEditorPage — edit mode', () => {
     await screen.findByLabelText(/^name$/i);
     fireEvent.change(screen.getByLabelText('Field 1 type'), { target: { value: 'number' } });
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    await screen.findByRole('heading', { name: /revisar cambios/i });
+    await screen.findByRole('heading', { name: /review changes/i });
 
-    const confirmButton = screen.getByRole('button', { name: /confirmar/i });
+    const confirmButton = screen.getByRole('button', { name: /confirm/i });
     expect(confirmButton).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('brand'), { target: { value: '1999' } });
@@ -333,10 +333,10 @@ describe('SchemaEditorPage — edit mode', () => {
     await screen.findByLabelText(/^name$/i);
     fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    await screen.findByRole('heading', { name: /revisar cambios/i });
-    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+    await screen.findByRole('heading', { name: /review changes/i });
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
-    expect(screen.queryByRole('heading', { name: /revisar cambios/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /review changes/i })).not.toBeInTheDocument();
     expect(useCases.updateSchema.execute).not.toHaveBeenCalled();
     expect(screen.queryByText('Content Types page')).not.toBeInTheDocument();
   });
