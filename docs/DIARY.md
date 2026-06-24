@@ -618,3 +618,28 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   retype pair via `it.each`, defensive same-type retype. 48 shared tests green;
   `tsc --noEmit` clean.
 - **Next:** `6.2` — `scanAffected` + `coerce`.
+
+### [2026-06-24] 6.2 — scanAffected + coerce
+- **Did:** Closed the pure evolution pipeline in `shared/src/evolution/`. `coerce(value,
+  targetType)` attempts a per-value conversion (`"2024" → 2024`; `"vintage"`/`"n/a"` →
+  `{ ok: false }`; booleans via `true/1/yes` / `false/0/no` strings or zero-check;
+  dates pass through if `new Date()` parses; `reference` always fails — no scalar has a
+  meaningful entry-id form; `null` always passes through unchanged). `scanAffected
+  (changes, entries)` walks real entries against the diff and returns exactly the
+  `AffectedEntry[]` that break.
+- **Decisions:** Neither `SchemaChange` nor `Entry` carries a schemaId, but field ids
+  and entry ids are both globally unique uuids, so membership (`fieldId in entry.data`)
+  and reference resolution (`entries.some(e => e.id === value)`) need no schema
+  parameter at all — callers just pass the full entry set. `field.added`/`field.renamed`
+  never produce affected entries (id-keyed data survives renames). `requiredChanged`
+  only flags empties when *becoming* required, never when relaxing. `refRetargeted`
+  is skipped when `to` is `undefined` and never flags `null` references (absence is
+  valid, not dangling).
+- **Tests:** `coerce` — the spec's named cases plus boolean/date/reference edges.
+  `scanAffected` — add/rename never appear; remove flags every holder; retype splits
+  ok/fail per entry (the `year` text→number mixed-data case); requiredChanged only on
+  empties and only going required; refRetargeted only flags truly dangling ids, not
+  resolvable or null ones; multi-change scan returns exactly the union, no more no
+  fewer. 78 shared tests green; `tsc --noEmit` clean; full repo suite (290 tests across
+  shared/backend/frontend) green.
+- **Next:** `6.3` — preview modal (changes, risk badges, affected count + list).
