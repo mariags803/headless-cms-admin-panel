@@ -536,3 +536,22 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   `vite build` clean.
 - **Next:** `5.2` (entry table per schema), then `5.3` wires `FieldInput`
   into the schema-generated entry form.
+
+### [2026-06-24] 5.2 — Entry table per schema
+- **Did:** Replaced the `EntryListPage` stub with a real table: `useSchema(schemaId)`
+  supplies `fields[].name` for column headers, `useEntries(schemaId)` supplies the
+  rows, `useDeleteEntry()` wires the delete action. Cells read `entry.data[field.id]`
+  per the `field.id`-keying rule, never `field.name`. Loading/error/empty states and
+  delete-with-confirm mirror the `SchemaListPage` (4.1) pattern; new
+  `EntryListPage.module.css` reuses the same design tokens.
+- **Decisions:** Cell formatting is intentionally minimal for this task: `null`/
+  `undefined` → `—`, boolean → `Sí`/`No`, everything else `String(value)`. Reference
+  fields just render the raw target id for now — the dropdown + jump-to-entry link is
+  `5.4`'s job, not this one.
+- **Tests:** New `EntryListPage.test.tsx` (loading, error, empty, column/cell
+  rendering incl. boolean and null, New Entry link, row Edit link, delete
+  confirm/cancel). Also fixed `AppRoutes.test.tsx`'s entries-route assertion, which
+  still expected the old stub heading and an unmocked `listEntries` use case. 107
+  frontend tests green; `tsc --noEmit` clean.
+- **Next:** `5.3` — generate the entry form from the schema using the `5.1` field
+  registry.

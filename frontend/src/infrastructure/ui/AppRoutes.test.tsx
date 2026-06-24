@@ -19,7 +19,7 @@ function fakeUseCases(): UseCases {
     createSchema: {} as never,
     updateSchema: {} as never,
     deleteSchema: {} as never,
-    listEntries: {} as never,
+    listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
     getEntry: {} as never,
     createEntry: {} as never,
     updateEntry: {} as never,
@@ -59,9 +59,9 @@ describe('AppRoutes', () => {
     expect(await screen.findByRole('heading', { name: 'Edit Content Type' })).toBeInTheDocument()
   })
 
-  it('renders EntryListPage at /schemas/:schemaId/entries', () => {
+  it('renders EntryListPage at /schemas/:schemaId/entries', async () => {
     renderAt('/schemas/car/entries')
-    expect(screen.getByRole('heading', { name: 'Entries — car' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Car entries' })).toBeInTheDocument()
   })
 
   it('renders EntryEditorPage at /schemas/:schemaId/entries/new', () => {
