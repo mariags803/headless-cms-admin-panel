@@ -7,6 +7,7 @@ function fakeUseCases(): UseCases {
     getSchema: { execute: jest.fn() } as never,
     createSchema: { execute: jest.fn() } as never,
     updateSchema: { execute: jest.fn() } as never,
+    applyEvolution: {} as never,
     deleteSchema: { execute: jest.fn() } as never,
     listEntries: { execute: jest.fn() } as never,
     getEntry: { execute: jest.fn() } as never,

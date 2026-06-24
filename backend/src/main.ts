@@ -1,10 +1,12 @@
 import { createDb } from './infrastructure/persistence/sqlite/db';
 import { SqliteSchemaRepository } from './infrastructure/persistence/sqlite/SqliteSchemaRepository';
 import { SqliteEntryRepository } from './infrastructure/persistence/sqlite/SqliteEntryRepository';
+import { SqliteTransactionRunner } from './infrastructure/persistence/sqlite/SqliteTransactionRunner';
 import { CreateSchema } from './application/schema/CreateSchema';
 import { ListSchemas } from './application/schema/ListSchemas';
 import { UpdateSchema } from './application/schema/UpdateSchema';
 import { DeleteSchema } from './application/schema/DeleteSchema';
+import { ApplySchemaEvolution } from './application/schema/ApplySchemaEvolution';
 import { CreateEntry } from './application/entry/CreateEntry';
 import { ListEntries } from './application/entry/ListEntries';
 import { GetEntry } from './application/entry/GetEntry';
@@ -19,6 +21,7 @@ const db = createDb(process.env.DB_FILE ?? 'cms.sqlite3');
 const schemaRepo = new SqliteSchemaRepository(db);
 const entryRepo = new SqliteEntryRepository(db);
 const eventPublisher = new SseEventPublisher();
+const transactionRunner = new SqliteTransactionRunner(db);
 
 const app = createServer({
   schema: {
@@ -26,6 +29,7 @@ const app = createServer({
     listSchemas: new ListSchemas(schemaRepo),
     updateSchema: new UpdateSchema(schemaRepo, entryRepo, eventPublisher),
     deleteSchema: new DeleteSchema(schemaRepo, eventPublisher),
+    applySchemaEvolution: new ApplySchemaEvolution(schemaRepo, entryRepo, eventPublisher, transactionRunner),
   },
   entry: {
     createEntry: new CreateEntry(entryRepo, schemaRepo, eventPublisher),

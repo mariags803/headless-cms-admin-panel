@@ -22,7 +22,18 @@ function matchesType(value: FieldValue | undefined, type: string): boolean {
   }
 }
 
-export function validateEntry(data: Record<string, FieldValue>, schema: Schema): ValidationError[] {
+export interface ValidateEntryOptions {
+  // Skip type checks for non-reference fields — used when applying schema-evolution
+  // corrections, where the value is being migrated to a not-yet-persisted schema and
+  // can't be checked against the (about to be replaced) current field types.
+  skipTypeCheck?: boolean;
+}
+
+export function validateEntry(
+  data: Record<string, FieldValue>,
+  schema: Schema,
+  options?: ValidateEntryOptions,
+): ValidationError[] {
   const errors: ValidationError[] = [];
 
   for (const field of schema.fields) {
@@ -33,7 +44,10 @@ export function validateEntry(data: Record<string, FieldValue>, schema: Schema):
       continue;
     }
 
-    if (!isEmpty(value) && !matchesType(value, field.type)) {
+    if (isEmpty(value)) continue;
+    if (field.type !== 'reference' && options?.skipTypeCheck) continue;
+
+    if (!matchesType(value, field.type)) {
       errors.push({ fieldId: field.id, message: `expected ${field.type}` });
     }
   }

@@ -25,4 +25,22 @@
     display: flex;
     gap: var(--space-3);
   }
+
+  .schemaBanner {
+    border: 1px solid var(--risk-warning);
+    background: var(--risk-warning-bg);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+    max-width: 40rem;
+  }
+
+  .schemaBannerList {
+    list-style: none;
+    margin: var(--space-3) 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
 }

@@ -1,9 +1,10 @@
-import type { Schema } from '@cms/shared';
-import type { SchemaRepository } from '../../domain/schema/SchemaRepository';
+import type { Field, Schema } from '@cms/shared';
+import type { ApplyEvolutionInput, SchemaRepository } from '../../domain/schema/SchemaRepository';
 import { ListSchemas } from './ListSchemas';
 import { GetSchema } from './GetSchema';
 import { CreateSchema } from './CreateSchema';
 import { UpdateSchema } from './UpdateSchema';
+import { ApplyEvolution } from './ApplyEvolution';
 import { DeleteSchema } from './DeleteSchema';
 
 function makeSchema(overrides: Partial<Schema> = {}): Schema {
@@ -40,6 +41,19 @@ class FakeSchemaRepository implements SchemaRepository {
 
   async update(id: string, input: { name: string; fields: Schema['fields'] }) {
     const updated = makeSchema({ ...this.store.get(id), id, ...input });
+    this.store.set(id, updated);
+    return updated;
+  }
+
+  lastApplyEvolutionInput: { id: string; input: ApplyEvolutionInput } | null = null;
+
+  async applyEvolution(id: string, input: ApplyEvolutionInput) {
+    this.lastApplyEvolutionInput = { id, input };
+    const fields: Field[] = input.newSchema.fields.map((field, index) => ({
+      ...field,
+      id: field.id ?? `generated-${index}`,
+    }));
+    const updated = makeSchema({ ...this.store.get(id), id, name: input.newSchema.name, fields });
     this.store.set(id, updated);
     return updated;
   }
@@ -83,6 +97,22 @@ describe('schema use cases', () => {
     const result = await new UpdateSchema(repo).execute('s1', { name: 'Vehicle', fields: [] });
 
     expect(result.name).toBe('Vehicle');
+  });
+
+  it('ApplyEvolution delegates to repository.applyEvolution', async () => {
+    const repo = new FakeSchemaRepository();
+    repo.seed(makeSchema());
+
+    const result = await new ApplyEvolution(repo).execute('s1', {
+      newSchema: { name: 'Vehicle', fields: [] },
+      corrections: [{ entryId: 'e1', fieldId: 'f1', value: 2024 }],
+    });
+
+    expect(result.name).toBe('Vehicle');
+    expect(repo.lastApplyEvolutionInput).toEqual({
+      id: 's1',
+      input: { newSchema: { name: 'Vehicle', fields: [] }, corrections: [{ entryId: 'e1', fieldId: 'f1', value: 2024 }] },
+    });
   });
 
   it('DeleteSchema delegates to repository.delete', async () => {

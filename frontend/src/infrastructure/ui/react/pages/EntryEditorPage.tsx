@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { validateEntry, type Field, type FieldValue } from '@cms/shared';
+import { validateEntry, type DomainEvent, type Entry, type Field, type FieldValue, type Schema } from '@cms/shared';
 import { useSchema } from '../hooks/useSchema';
 import { useEntry } from '../hooks/useEntry';
 import { useCreateEntry } from '../hooks/useCreateEntry';
 import { useUpdateEntry } from '../hooks/useUpdateEntry';
+import { useRealtime } from '../hooks/useRealtime';
 import { FieldInput } from '../components/fields';
+import { buildEvolutionPlan } from '../../../../application/evolution/buildEvolutionPlan';
+import { describeChange } from '../../../../application/evolution/describeChange';
 import styles from './EntryEditorPage.module.css';
 
 function defaultValueFor(field: Field): FieldValue {
@@ -42,8 +45,19 @@ export function EntryEditorPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const seededRef = useRef<string | undefined>(undefined);
 
+  // Frozen snapshot the form actually renders against. A live schema.updated
+  // event is staged in pendingSchema instead of swapping this in directly, so
+  // in-progress input is never silently discarded mid-edit.
+  const [activeSchema, setActiveSchema] = useState<Schema | null>(null);
+  const [pendingSchema, setPendingSchema] = useState<Schema | null>(null);
+  const activeSchemaSeededRef = useRef(false);
+
   useEffect(() => {
     if (!schema) return;
+    if (!activeSchemaSeededRef.current) {
+      activeSchemaSeededRef.current = true;
+      setActiveSchema(schema);
+    }
     if (isEdit) {
       if (entry && seededRef.current !== entry.id) {
         seededRef.current = entry.id;
@@ -55,16 +69,87 @@ export function EntryEditorPage() {
     }
   }, [schema, entry, isEdit]);
 
+  const onRealtimeEvent = useCallback(
+    (event: DomainEvent) => {
+      if (
+        event.type === 'schema.updated' &&
+        event.schema.id === schemaId &&
+        activeSchema &&
+        event.schema.updatedAt !== activeSchema.updatedAt
+      ) {
+        setPendingSchema(event.schema);
+      }
+    },
+    [schemaId, activeSchema],
+  );
+  useRealtime(onRealtimeEvent);
+
+  const fieldNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    activeSchema?.fields.forEach((field) => {
+      names[field.id] = field.name;
+    });
+    pendingSchema?.fields.forEach((field) => {
+      names[field.id] = field.name;
+    });
+    return names;
+  }, [activeSchema, pendingSchema]);
+
+  const pendingPlan = useMemo(() => {
+    if (!activeSchema || !pendingSchema) return null;
+    const draftEntry: Entry = {
+      id: entryId ?? 'draft',
+      schemaId: schemaId as string,
+      data,
+      createdAt: '',
+      updatedAt: '',
+    };
+    return buildEvolutionPlan(activeSchema, pendingSchema, [draftEntry]);
+  }, [activeSchema, pendingSchema, entryId, schemaId, data]);
+
   function handleChange(fieldId: string, value: FieldValue) {
     setData((prev) => ({ ...prev, [fieldId]: value }));
+  }
+
+  function reconcileSchema() {
+    if (!pendingSchema || !pendingPlan) return;
+
+    const nextFieldIds = new Set(pendingSchema.fields.map((field) => field.id));
+    const nextData = defaultsFor(pendingSchema.fields);
+    for (const field of pendingSchema.fields) {
+      if (field.id in data) nextData[field.id] = data[field.id];
+    }
+
+    const nextErrors: Record<string, string> = {};
+    for (const row of pendingPlan.affected) {
+      if (!nextFieldIds.has(row.fieldId)) continue;
+      if (row.coerced) {
+        if (row.coerced.ok) {
+          nextData[row.fieldId] = row.coerced.value;
+        } else {
+          nextErrors[row.fieldId] = 'Este valor ya no es válido tras el cambio de tipo; corrígelo.';
+        }
+      } else {
+        nextErrors[row.fieldId] = 'Este campo ahora es obligatorio.';
+      }
+    }
+
+    setData(nextData);
+    setFieldErrors(nextErrors);
+    setActiveSchema(pendingSchema);
+    setPendingSchema(null);
+  }
+
+  function dismissPendingSchema() {
+    setPendingSchema(null);
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitError(null);
-    if (!schema) return;
+    if (!activeSchema) return;
 
-    const errors = validateEntry(data, schema);
+    const errors = validateEntry(data, activeSchema);
     if (errors.length > 0) {
       setFieldErrors(Object.fromEntries(errors.map((err) => [err.fieldId, err.message])));
       return;
@@ -101,17 +186,39 @@ export function EntryEditorPage() {
     return <p role="alert">{loadError.message}</p>;
   }
 
-  if (!schema) {
+  if (!activeSchema) {
     return null;
   }
 
   return (
     <section className={styles.page}>
       <h1>
-        {isEdit ? 'Edit Entry' : 'New Entry'} — {schema.name}
+        {isEdit ? 'Edit Entry' : 'New Entry'} — {activeSchema.name}
       </h1>
+
+      {pendingSchema && pendingPlan && (
+        <section role="alert" className={styles.schemaBanner}>
+          <p>El esquema cambió mientras editabas esta entrada.</p>
+          <ul className={styles.schemaBannerList}>
+            {pendingPlan.changes.map(({ change, risk }, index) => (
+              <li key={index} data-risk={risk}>
+                {describeChange(change, fieldNames)}
+              </li>
+            ))}
+          </ul>
+          <div className={styles.actions}>
+            <button type="button" onClick={reconcileSchema}>
+              Actualizar formulario
+            </button>
+            <button type="button" onClick={dismissPendingSchema}>
+              Descartar
+            </button>
+          </div>
+        </section>
+      )}
+
       <form onSubmit={handleSubmit} className={styles.form}>
-        {schema.fields.map((field) => (
+        {activeSchema.fields.map((field) => (
           <div key={field.id} className={styles.field}>
             <span className={styles.fieldLabel}>
               {field.name}

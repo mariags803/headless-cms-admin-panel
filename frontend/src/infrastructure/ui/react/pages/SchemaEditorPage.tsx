@@ -6,11 +6,11 @@ import { useSchemas } from '../hooks/useSchemas';
 import { useEntries } from '../hooks/useEntries';
 import { useCreateSchema } from '../hooks/useCreateSchema';
 import { useUpdateSchema } from '../hooks/useUpdateSchema';
-import { useUpdateEntry } from '../hooks/useUpdateEntry';
+import { useApplyEvolution } from '../hooks/useApplyEvolution';
 import { SchemaFieldRow, toFieldPayload, type FieldDraft } from '../components/SchemaFieldRow';
 import { EvolutionPreviewModal } from '../components/EvolutionPreviewModal';
 import { buildEvolutionPlan, type EvolutionPlan } from '../../../../application/evolution/buildEvolutionPlan';
-import type { SchemaUpdateInput } from '../../../../domain/schema/SchemaRepository';
+import type { EvolutionCorrection, SchemaUpdateInput } from '../../../../domain/schema/SchemaRepository';
 import styles from './SchemaEditorPage.module.css';
 
 function swap<T>(items: T[], a: number, b: number): T[] {
@@ -29,9 +29,8 @@ export function SchemaEditorPage() {
   const { data: entries } = useEntries(isEdit ? schemaId : undefined);
   const { mutate: createSchema, isPending: isCreating } = useCreateSchema();
   const { mutate: updateSchema, isPending: isUpdating } = useUpdateSchema();
-  const { mutateAsync: updateEntry } = useUpdateEntry();
-  const [isFixingEntries, setIsFixingEntries] = useState(false);
-  const isSubmitting = isCreating || isUpdating || isFixingEntries;
+  const { mutate: applyEvolution, isPending: isApplyingEvolution } = useApplyEvolution();
+  const isSubmitting = isCreating || isUpdating || isApplyingEvolution;
 
   const [name, setName] = useState('');
   const [fields, setFields] = useState<FieldDraft[]>([]);
@@ -172,27 +171,20 @@ export function SchemaEditorPage() {
     }
   }
 
-  async function handleConfirmEvolution(transformed: Record<string, Record<string, FieldValue>>) {
+  function handleConfirmEvolution(transformed: Record<string, Record<string, FieldValue>>) {
     if (!pendingInput) return;
-    const fixes = Object.entries(transformed).filter(([, fields]) => Object.keys(fields).length > 0);
 
-    setIsFixingEntries(true);
-    try {
-      await Promise.all(
-        fixes.map(([entryId, fields]) => {
-          const entry = (entries ?? []).find((e) => e.id === entryId);
-          if (!entry) return Promise.resolve();
-          return updateEntry({ id: entryId, input: { data: { ...entry.data, ...fields } } });
-        }),
-      );
-    } catch (err) {
-      setIsFixingEntries(false);
-      setSubmitError(err instanceof Error ? err.message : 'No se pudieron corregir las entradas afectadas.');
-      return;
-    }
-    setIsFixingEntries(false);
+    const corrections: EvolutionCorrection[] = Object.entries(transformed).flatMap(([entryId, fields]) =>
+      Object.entries(fields).map(([fieldId, value]) => ({ entryId, fieldId, value })),
+    );
 
-    submitUpdate(pendingInput);
+    applyEvolution(
+      { id: schemaId as string, input: { newSchema: pendingInput, corrections } },
+      {
+        onSuccess: () => navigate('/schemas'),
+        onError: (err) => setSubmitError(err.message),
+      },
+    );
     setPendingPlan(null);
     setPendingInput(null);
   }

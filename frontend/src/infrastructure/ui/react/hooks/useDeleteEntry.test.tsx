@@ -10,6 +10,7 @@ function fakeUseCases(): UseCases {
     getSchema: {} as never,
     createSchema: {} as never,
     updateSchema: {} as never,
+    applyEvolution: {} as never,
     deleteSchema: {} as never,
     listEntries: {} as never,
     getEntry: {} as never,

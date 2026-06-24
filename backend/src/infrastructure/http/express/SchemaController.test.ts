@@ -7,6 +7,8 @@ import { CreateSchema } from '../../../application/schema/CreateSchema';
 import { ListSchemas } from '../../../application/schema/ListSchemas';
 import { UpdateSchema } from '../../../application/schema/UpdateSchema';
 import { DeleteSchema } from '../../../application/schema/DeleteSchema';
+import { ApplySchemaEvolution } from '../../../application/schema/ApplySchemaEvolution';
+import { SqliteTransactionRunner } from '../../persistence/sqlite/SqliteTransactionRunner';
 import { CreateEntry } from '../../../application/entry/CreateEntry';
 import { ListEntries } from '../../../application/entry/ListEntries';
 import { GetEntry } from '../../../application/entry/GetEntry';
@@ -32,6 +34,12 @@ describe('SchemaController', () => {
         listSchemas: new ListSchemas(repo),
         updateSchema: new UpdateSchema(repo, entryRepo, eventPublisher),
         deleteSchema: new DeleteSchema(repo, eventPublisher),
+        applySchemaEvolution: new ApplySchemaEvolution(
+          repo,
+          entryRepo,
+          eventPublisher,
+          new SqliteTransactionRunner(db),
+        ),
       },
       entry: {
         createEntry: new CreateEntry(entryRepo, repo, eventPublisher),
@@ -139,5 +147,51 @@ describe('SchemaController', () => {
 
     expect(res.status).toBe(404);
     expect(res.body.error).toBe('NOT_FOUND');
+  });
+
+  it('PUT /schemas/:id/apply retypes a field and fixes its entries in one call', async () => {
+    const created = await request(app).post('/schemas').send({
+      name: 'Car',
+      fields: [{ name: 'year', type: 'text', required: false }],
+    });
+    const fieldId = created.body.fields[0].id;
+    const entry = await request(app)
+      .post('/entries')
+      .send({ schemaId: created.body.id, data: { [fieldId]: 'vintage' } });
+
+    const res = await request(app)
+      .put(`/schemas/${created.body.id}/apply`)
+      .send({
+        newSchema: { name: 'Car', fields: [{ id: fieldId, name: 'year', type: 'number', required: false }] },
+        corrections: [{ entryId: entry.body.id, fieldId, value: 2024 }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.fields[0].type).toBe('number');
+
+    const fixedEntry = await request(app).get(`/entries/${entry.body.id}`);
+    expect(fixedEntry.body.data[fieldId]).toBe(2024);
+  });
+
+  it('PUT /schemas/:id/apply returns 409 and leaves the schema unchanged when an entry is still not coercible', async () => {
+    const created = await request(app).post('/schemas').send({
+      name: 'Car',
+      fields: [{ name: 'year', type: 'text', required: false }],
+    });
+    const fieldId = created.body.fields[0].id;
+    await request(app).post('/entries').send({ schemaId: created.body.id, data: { [fieldId]: 'vintage' } });
+
+    const res = await request(app)
+      .put(`/schemas/${created.body.id}/apply`)
+      .send({
+        newSchema: { name: 'Car', fields: [{ id: fieldId, name: 'year', type: 'number', required: false }] },
+        corrections: [],
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('EVOLUTION_BLOCKED');
+
+    const unchanged = await request(app).get('/schemas');
+    expect(unchanged.body[0].fields[0].type).toBe('text');
   });
 });

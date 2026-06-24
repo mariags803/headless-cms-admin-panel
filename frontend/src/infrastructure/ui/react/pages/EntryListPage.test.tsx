@@ -11,6 +11,7 @@ function fakeUseCases(overrides: Partial<UseCases> = {}): UseCases {
     getSchema: { execute: jest.fn().mockResolvedValue(undefined) } as never,
     createSchema: {} as never,
     updateSchema: {} as never,
+    applyEvolution: {} as never,
     deleteSchema: {} as never,
     listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
     getEntry: {} as never,

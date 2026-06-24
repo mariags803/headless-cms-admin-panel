@@ -7,6 +7,7 @@ import { ListSchemas } from '../../../../application/schema/ListSchemas';
 import { GetSchema } from '../../../../application/schema/GetSchema';
 import { CreateSchema } from '../../../../application/schema/CreateSchema';
 import { UpdateSchema } from '../../../../application/schema/UpdateSchema';
+import { ApplyEvolution } from '../../../../application/schema/ApplyEvolution';
 import { DeleteSchema } from '../../../../application/schema/DeleteSchema';
 import { ListEntries } from '../../../../application/entry/ListEntries';
 import { GetEntry } from '../../../../application/entry/GetEntry';
@@ -19,6 +20,7 @@ export interface UseCases {
   getSchema: GetSchema;
   createSchema: CreateSchema;
   updateSchema: UpdateSchema;
+  applyEvolution: ApplyEvolution;
   deleteSchema: DeleteSchema;
   listEntries: ListEntries;
   getEntry: GetEntry;
@@ -38,6 +40,7 @@ export function buildUseCases(
     getSchema: new GetSchema(schemas),
     createSchema: new CreateSchema(schemas),
     updateSchema: new UpdateSchema(schemas),
+    applyEvolution: new ApplyEvolution(schemas),
     deleteSchema: new DeleteSchema(schemas),
     listEntries: new ListEntries(entries),
     getEntry: new GetEntry(entries),

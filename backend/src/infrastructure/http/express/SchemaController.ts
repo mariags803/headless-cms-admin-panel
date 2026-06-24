@@ -3,12 +3,14 @@ import type { CreateSchema } from '../../../application/schema/CreateSchema';
 import type { ListSchemas } from '../../../application/schema/ListSchemas';
 import type { UpdateSchema } from '../../../application/schema/UpdateSchema';
 import type { DeleteSchema } from '../../../application/schema/DeleteSchema';
+import type { ApplySchemaEvolution } from '../../../application/schema/ApplySchemaEvolution';
 
 export interface SchemaControllerDeps {
   createSchema: CreateSchema;
   listSchemas: ListSchemas;
   updateSchema: UpdateSchema;
   deleteSchema: DeleteSchema;
+  applySchemaEvolution: ApplySchemaEvolution;
 }
 
 export function createSchemaRouter(deps: SchemaControllerDeps): Router {
@@ -33,6 +35,14 @@ export function createSchemaRouter(deps: SchemaControllerDeps): Router {
   router.put('/:id', async (req, res, next) => {
     try {
       res.json(await deps.updateSchema.execute({ ...req.body, id: req.params.id }));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put('/:id/apply', async (req, res, next) => {
+    try {
+      res.json(await deps.applySchemaEvolution.execute({ ...req.body, id: req.params.id }));
     } catch (err) {
       next(err);
     }

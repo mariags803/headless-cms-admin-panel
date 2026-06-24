@@ -68,4 +68,32 @@ describe('validateEntry', () => {
 
     expect(errors).toEqual([]);
   });
+
+  describe('skipTypeCheck', () => {
+    it('accepts a wrong-typed non-reference value', () => {
+      const errors = validateEntry(
+        { 'f-brand': 'Toyota', 'f-year': 'old' },
+        schema,
+        { skipTypeCheck: true },
+      );
+
+      expect(errors).toEqual([]);
+    });
+
+    it('still flags a missing required field', () => {
+      const errors = validateEntry({}, schema, { skipTypeCheck: true });
+
+      expect(errors).toEqual([{ fieldId: 'f-brand', message: 'required' }]);
+    });
+
+    it('still flags a malformed reference value', () => {
+      const errors = validateEntry(
+        { 'f-brand': 'Toyota', 'f-owner': 42 },
+        schema,
+        { skipTypeCheck: true },
+      );
+
+      expect(errors).toEqual([{ fieldId: 'f-owner', message: 'expected reference' }]);
+    });
+  });
 });

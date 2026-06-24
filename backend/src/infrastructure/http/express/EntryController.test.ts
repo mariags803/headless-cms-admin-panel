@@ -7,6 +7,8 @@ import { CreateSchema } from '../../../application/schema/CreateSchema';
 import { ListSchemas } from '../../../application/schema/ListSchemas';
 import { UpdateSchema } from '../../../application/schema/UpdateSchema';
 import { DeleteSchema } from '../../../application/schema/DeleteSchema';
+import { ApplySchemaEvolution } from '../../../application/schema/ApplySchemaEvolution';
+import { SqliteTransactionRunner } from '../../persistence/sqlite/SqliteTransactionRunner';
 import { CreateEntry } from '../../../application/entry/CreateEntry';
 import { ListEntries } from '../../../application/entry/ListEntries';
 import { GetEntry } from '../../../application/entry/GetEntry';
@@ -32,6 +34,7 @@ describe('EntryController', () => {
         listSchemas: new ListSchemas(schemaRepo),
         updateSchema: new UpdateSchema(schemaRepo, entryRepo, eventPublisher),
         deleteSchema: new DeleteSchema(schemaRepo, eventPublisher),
+        applySchemaEvolution: new ApplySchemaEvolution(schemaRepo, entryRepo, eventPublisher, new SqliteTransactionRunner(db)),
       },
       entry: {
         createEntry: new CreateEntry(entryRepo, schemaRepo, eventPublisher),

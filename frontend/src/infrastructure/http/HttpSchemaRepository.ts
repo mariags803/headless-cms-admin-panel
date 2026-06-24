@@ -1,5 +1,10 @@
 import type { Schema } from '@cms/shared';
-import type { NewSchemaInput, SchemaRepository, SchemaUpdateInput } from '../../domain/schema/SchemaRepository';
+import type {
+  ApplyEvolutionInput,
+  NewSchemaInput,
+  SchemaRepository,
+  SchemaUpdateInput,
+} from '../../domain/schema/SchemaRepository';
 
 const DEFAULT_BASE_URL = 'http://localhost:3001';
 
@@ -32,6 +37,15 @@ export class HttpSchemaRepository implements SchemaRepository {
 
   async update(id: string, input: SchemaUpdateInput): Promise<Schema> {
     const res = await fetch(`${this.baseUrl}/schemas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    return res.json();
+  }
+
+  async applyEvolution(id: string, input: ApplyEvolutionInput): Promise<Schema> {
+    const res = await fetch(`${this.baseUrl}/schemas/${id}/apply`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),

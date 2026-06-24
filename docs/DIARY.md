@@ -709,3 +709,72 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   `tsc -b` green.
 - **Next:** `6.5` — mid-edit reconciliation: a `schema.updated` event arriving while an
   entry is open must not discard in-progress input.
+
+### [2026-06-24] 6.5 — Mid-edit reconciliation
+- **Did:** `EntryEditorPage` no longer renders directly off the live `useSchema` query.
+  It freezes the schema it seeded the form from into `activeSchema` state; a
+  `schema.updated` SSE event for the same schema (caught via the existing
+  `useRealtime()` hook, independent of the global `useRealtimeInvalidation()` that
+  already refetches the query cache) is staged in `pendingSchema` instead of swapping
+  in directly. A banner renders the same `buildEvolutionPlan` change list (now against a
+  synthetic draft `Entry` built from the in-progress `data`) used by the schema-editor
+  preview, with two actions: "Actualizar formulario" (reconcile) or "Descartar". Until
+  reconciled, the form keeps rendering the old schema/values untouched — no silent
+  reset. Extracted `describeChange` out of `EvolutionPreviewModal.tsx` into
+  `application/evolution/describeChange.ts` so both surfaces share the same change
+  descriptions instead of duplicating the switch.
+- **Decisions:** Reconciliation rebuilds `data` from `pendingSchema.fields` only
+  (dropped fields vanish for free), then carries over current values for fields still
+  present, applies `coerce` results for retyped fields, and flags non-coercible retypes
+  or newly-required-and-empty fields as field errors reusing the existing
+  `fieldErrors`/`FieldInput.error` plumbing — no new error UI. `field.refRetargeted` is
+  not specially resolved here (the lightweight single-entry scan can't validate against
+  the target schema's real entries); it surfaces in the banner like any other risky
+  change and the existing `ReferenceInput` lets the user just re-pick after reconciling.
+  Dismissing the banner is a one-shot dismissal (no re-prompt on the same event) — out
+  of scope to re-trigger; the user can always re-open the entry to pick up the schema.
+- **Tests:** `EntryEditorPage` — banner appears on a same-id, newer-`updatedAt`
+  `schema.updated` without losing typed values; dismiss leaves the form untouched;
+  reconcile on `field.added` keeps existing values and adds the new field; reconcile on
+  a coercible retype auto-fixes the value; on a non-coercible retype keeps the value and
+  shows the manual-fix message; on `field.removed` drops the field from the form. Added
+  a reusable `fakeRealtimeClient()` to the shared test wrapper (`RealtimeProvider` is now
+  always present in `makeWrapper`) instead of duplicating the subscribe/emit fake per
+  test file. Full frontend suite (147 tests) and `tsc` green.
+- **Next:** Phase 7 — polish: empty/loading/error states, validation messages, styling,
+  README.
+
+### [2026-06-24] Bugfix — atomic `PUT /schemas/:id/apply`
+- **Did:** The evolution-confirm flow (6.3/6.4) was broken: fixing an entry via
+  `PUT /entries/:id` before `PUT /schemas/:id` always 400'd, because `UpdateEntry`
+  validates `data` against the entry's *current* schema, i.e. the still-old field
+  types — a corrected `2024` rejected as not matching the not-yet-replaced `text`
+  field. Replaced the two-call flow with one atomic `PUT /schemas/:id/apply`
+  (`{ newSchema, corrections: { entryId, fieldId, value }[] }`): a new
+  `ApplySchemaEvolution` use case applies each correction directly (validated against
+  the *new* schema, not the old one) inside a `TransactionRunner.run()`, re-runs the
+  existing `EvolutionBlocked` safety net, then saves the schema — all committed or
+  rolled back together. `SchemaEditorPage.handleConfirmEvolution` now calls this one
+  endpoint instead of looping `updateEntry` then `updateSchema`.
+- **Decisions:** `better-sqlite3`'s `db.transaction()` needs a synchronous callback,
+  but every repository here is `async` by port convention (no real I/O wait inside).
+  Added a small `TransactionRunner` port (`run<T>(fn: () => Promise<T>): Promise<T>`)
+  implemented by `SqliteTransactionRunner` doing manual `BEGIN`/`COMMIT`/`ROLLBACK` —
+  keeps raw SQL out of the use case while giving atomicity across both repositories.
+  `validateEntry` gained an optional third param, `{ skipTypeCheck?: boolean }`: skips
+  `matchesType` for non-reference fields but still enforces `required` and the
+  reference shape check — default behavior (every other call site) is unchanged.
+- **Tests:** `validateEntry` — `skipTypeCheck` accepts a wrong-typed value, still
+  flags missing required and malformed references. `ApplySchemaEvolution` — a
+  correction that fails the old type but fits the new one succeeds; a still-empty
+  corrected required value throws `InvalidEntry`; an uncorrected non-coercible entry
+  still throws `EvolutionBlocked` and leaves the schema untouched.
+  `SqliteTransactionRunner` — commits on success, rolls back both tables on throw.
+  `SchemaController` supertest — `PUT /:id/apply` end-to-end (200 + fixed entry; 409 +
+  unchanged schema when uncorrected). `SchemaEditorPage` — confirm now calls
+  `applyEvolution.execute` once with the flattened corrections instead of N
+  `updateEntry` calls + a separate `updateSchema` call. Full `shared`/`backend`/
+  `frontend` suites (81/101/148 tests) and `tsc` green. Manually verified end-to-end
+  against a running backend: the old `PUT /entries/:id` path still 400s as before
+  (unchanged, expected), the new `/apply` call returns 200 and the entry is fixed.
+- **Next:** Phase 7 — polish.

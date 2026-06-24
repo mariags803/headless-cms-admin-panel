@@ -11,6 +11,7 @@ function fakeUseCases(overrides: Partial<UseCases> = {}): UseCases {
     getSchema: { execute: jest.fn() } as never,
     createSchema: { execute: jest.fn() } as never,
     updateSchema: { execute: jest.fn() } as never,
+    applyEvolution: {} as never,
     deleteSchema: {} as never,
     listEntries: {} as never,
     getEntry: {} as never,
@@ -254,7 +255,7 @@ describe('SchemaEditorPage — edit mode', () => {
   it('submits the update when the evolution preview is confirmed, then navigates', async () => {
     const useCases = fakeUseCases({
       getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
-      updateSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      applyEvolution: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
       listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
     });
     renderPage(useCases, '/schemas/s1/edit');
@@ -266,7 +267,10 @@ describe('SchemaEditorPage — edit mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() =>
-      expect(useCases.updateSchema.execute).toHaveBeenCalledWith('s1', { name: 'Car', fields: [] }),
+      expect(useCases.applyEvolution.execute).toHaveBeenCalledWith('s1', {
+        newSchema: { name: 'Car', fields: [] },
+        corrections: [],
+      }),
     );
     expect(await screen.findByText('Content Types page')).toBeInTheDocument();
   });
@@ -274,7 +278,7 @@ describe('SchemaEditorPage — edit mode', () => {
   it('closes the modal and shows the submit error banner when confirming fails', async () => {
     const useCases = fakeUseCases({
       getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
-      updateSchema: { execute: jest.fn().mockRejectedValue(new Error('boom')) } as never,
+      applyEvolution: { execute: jest.fn().mockRejectedValue(new Error('boom')) } as never,
       listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
     });
     renderPage(useCases, '/schemas/s1/edit');
@@ -289,13 +293,12 @@ describe('SchemaEditorPage — edit mode', () => {
     expect(screen.queryByRole('heading', { name: /revisar cambios/i })).not.toBeInTheDocument();
   });
 
-  it('fixes the affected entry before submitting the schema update when retyping a field', async () => {
+  it('sends the affected entry correction together with the schema update in one call when retyping a field', async () => {
     const affectedEntry = { id: 'e1', schemaId: 's1', data: { f1: 'vintage' }, createdAt: '', updatedAt: '' };
     const useCases = fakeUseCases({
       getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
-      updateSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      applyEvolution: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
       listEntries: { execute: jest.fn().mockResolvedValue([affectedEntry]) } as never,
-      updateEntry: { execute: jest.fn().mockResolvedValue(affectedEntry) } as never,
     });
     renderPage(useCases, '/schemas/s1/edit');
 
@@ -312,12 +315,9 @@ describe('SchemaEditorPage — edit mode', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() =>
-      expect(useCases.updateEntry.execute).toHaveBeenCalledWith('e1', { data: { f1: 1999 } }),
-    );
-    await waitFor(() =>
-      expect(useCases.updateSchema.execute).toHaveBeenCalledWith('s1', {
-        name: 'Car',
-        fields: [{ id: 'f1', name: 'brand', type: 'number', required: true }],
+      expect(useCases.applyEvolution.execute).toHaveBeenCalledWith('s1', {
+        newSchema: { name: 'Car', fields: [{ id: 'f1', name: 'brand', type: 'number', required: true }] },
+        corrections: [{ entryId: 'e1', fieldId: 'f1', value: 1999 }],
       }),
     );
     expect(await screen.findByText('Content Types page')).toBeInTheDocument();

@@ -10,6 +10,7 @@ function fakeUseCases(entries: Entry[]): UseCases {
     getSchema: {} as never,
     createSchema: {} as never,
     updateSchema: {} as never,
+    applyEvolution: {} as never,
     deleteSchema: {} as never,
     listEntries: { execute: jest.fn().mockResolvedValue(entries) } as never,
     getEntry: {} as never,

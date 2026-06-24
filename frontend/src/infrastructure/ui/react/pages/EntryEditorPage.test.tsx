@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { Entry, Schema } from '@cms/shared';
 import type { UseCases } from '../providers/UseCasesProvider';
-import { makeWrapper } from '../hooks/test-helpers/renderWithProviders';
+import { fakeRealtimeClient, makeWrapper } from '../hooks/test-helpers/renderWithProviders';
 import { EntryEditorPage } from './EntryEditorPage';
 
 function fakeUseCases(overrides: Partial<UseCases> = {}): UseCases {
@@ -11,6 +11,7 @@ function fakeUseCases(overrides: Partial<UseCases> = {}): UseCases {
     getSchema: { execute: jest.fn() } as never,
     createSchema: {} as never,
     updateSchema: {} as never,
+    applyEvolution: {} as never,
     deleteSchema: {} as never,
     listEntries: {} as never,
     getEntry: { execute: jest.fn() } as never,
@@ -21,9 +22,9 @@ function fakeUseCases(overrides: Partial<UseCases> = {}): UseCases {
   };
 }
 
-function renderPage(useCases: UseCases, path: string) {
-  const { Wrapper } = makeWrapper(useCases);
-  return render(
+function renderPage(useCases: UseCases, path: string, realtime = fakeRealtimeClient()) {
+  const { Wrapper } = makeWrapper(useCases, realtime.client);
+  const result = render(
     <Wrapper>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
@@ -34,6 +35,7 @@ function renderPage(useCases: UseCases, path: string) {
       </MemoryRouter>
     </Wrapper>,
   );
+  return { ...result, emit: realtime.emit };
 }
 
 const carSchema: Schema = {
@@ -193,5 +195,140 @@ describe('EntryEditorPage — edit mode', () => {
       }),
     );
     expect(await screen.findByText('Entries page')).toBeInTheDocument();
+  });
+});
+
+describe('EntryEditorPage — mid-edit schema.updated (6.5)', () => {
+  it('shows a banner and keeps editing on the old schema until reconciled', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue(carEntry) } as never,
+    });
+    const { emit } = renderPage(useCases, '/schemas/s1/entries/e1/edit');
+
+    await screen.findByLabelText('brand');
+    fireEvent.change(screen.getByLabelText('year'), { target: { value: '2025' } });
+
+    const retypedSchema: Schema = {
+      ...carSchema,
+      updatedAt: '2026-01-01',
+      fields: [
+        carSchema.fields[0],
+        { id: 'f2', name: 'year', type: 'text', required: false },
+        carSchema.fields[2],
+      ],
+    };
+    act(() => emit({ type: 'schema.updated', schema: retypedSchema }));
+
+    expect(await screen.findByText(/esquema cambió/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('year')).toHaveValue(2025);
+  });
+
+  it('dismissing the banner keeps the form unchanged', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue(carEntry) } as never,
+    });
+    const { emit } = renderPage(useCases, '/schemas/s1/entries/e1/edit');
+
+    await screen.findByLabelText('brand');
+    const retypedSchema: Schema = {
+      ...carSchema,
+      updatedAt: '2026-01-01',
+      fields: [
+        carSchema.fields[0],
+        { id: 'f2', name: 'year', type: 'text', required: false },
+        carSchema.fields[2],
+      ],
+    };
+    act(() => emit({ type: 'schema.updated', schema: retypedSchema }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /descartar/i }));
+
+    expect(screen.queryByText(/esquema cambió/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('year')).toHaveValue(2024);
+  });
+
+  it('reconciling a safe field.added change keeps existing values and adds the new field', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue(carEntry) } as never,
+    });
+    const { emit } = renderPage(useCases, '/schemas/s1/entries/e1/edit');
+
+    await screen.findByLabelText('brand');
+    const widerSchema: Schema = {
+      ...carSchema,
+      updatedAt: '2026-01-01',
+      fields: [...carSchema.fields, { id: 'f4', name: 'color', type: 'text', required: false }],
+    };
+    act(() => emit({ type: 'schema.updated', schema: widerSchema }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /actualizar formulario/i }));
+
+    expect(screen.getByLabelText('brand')).toHaveValue('Tesla');
+    expect(await screen.findByLabelText('color')).toHaveValue('');
+  });
+
+  it('reconciling a coercible retype auto-fixes the value', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue({ ...carEntry, data: { ...carEntry.data, f2: '2024' } }) } as never,
+    });
+    const textYearSchema: Schema = {
+      ...carSchema,
+      fields: [carSchema.fields[0], { id: 'f2', name: 'year', type: 'text', required: false }, carSchema.fields[2]],
+    };
+    const useCasesWithTextYear = { ...useCases, getSchema: { execute: jest.fn().mockResolvedValue(textYearSchema) } as never };
+    const { emit } = renderPage(useCasesWithTextYear, '/schemas/s1/entries/e1/edit');
+
+    await screen.findByLabelText('brand');
+    const numberYearSchema: Schema = { ...textYearSchema, updatedAt: '2026-01-01', fields: [...carSchema.fields] };
+    act(() => emit({ type: 'schema.updated', schema: numberYearSchema }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /actualizar formulario/i }));
+
+    expect(await screen.findByLabelText('year')).toHaveValue(2024);
+    expect(screen.queryByText(/corrígelo/i)).not.toBeInTheDocument();
+  });
+
+  it('reconciling a non-coercible retype keeps the value and flags it for manual fix', async () => {
+    const textYearSchema: Schema = {
+      ...carSchema,
+      fields: [carSchema.fields[0], { id: 'f2', name: 'year', type: 'text', required: false }, carSchema.fields[2]],
+    };
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(textYearSchema) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue({ ...carEntry, data: { ...carEntry.data, f2: 'vintage' } }) } as never,
+    });
+    const { emit } = renderPage(useCases, '/schemas/s1/entries/e1/edit');
+
+    await screen.findByLabelText('brand');
+    const numberYearSchema: Schema = { ...textYearSchema, updatedAt: '2026-01-01', fields: [...carSchema.fields] };
+    act(() => emit({ type: 'schema.updated', schema: numberYearSchema }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /actualizar formulario/i }));
+
+    expect(await screen.findByText(/ya no es válido/i)).toBeInTheDocument();
+  });
+
+  it('reconciling a removed field drops it from the form', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue(carEntry) } as never,
+    });
+    const { emit } = renderPage(useCases, '/schemas/s1/entries/e1/edit');
+
+    await screen.findByLabelText('year');
+    const narrowedSchema: Schema = {
+      ...carSchema,
+      updatedAt: '2026-01-01',
+      fields: [carSchema.fields[0], carSchema.fields[2]],
+    };
+    act(() => emit({ type: 'schema.updated', schema: narrowedSchema }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /actualizar formulario/i }));
+
+    await waitFor(() => expect(screen.queryByLabelText('year')).not.toBeInTheDocument());
   });
 });
