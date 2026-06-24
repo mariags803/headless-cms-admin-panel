@@ -487,3 +487,26 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   logic. Verified manually: backend + frontend dev servers running, schema
   list loads, SSE `/events` connects, no CORS error in the browser console.
 - **Next:** none.
+
+### [2026-06-24] 4.3 — Reference target picker
+- **Did:** Extracted the reference-target `<select>` (inline in
+  `SchemaFieldRow` since 4.2) into its own
+  `ReferenceTargetPicker.tsx` + co-located `ReferenceTargetPicker.module.css`,
+  with its own test file. `SchemaFieldRow` now renders it for
+  `field.type === 'reference'`, same `aria-label`/behaviour as before.
+  Added an empty state — "No hay otros tipos de contenido disponibles." — for
+  when `schemas` is empty, instead of an unusable `<select>` with no options.
+- **Decisions:** Self-referencing schemas (e.g. `Employee → manager:
+  Employee`, `Category → parent: Category`) are a valid use case and are
+  **not** excluded from the picker's options — `SchemaEditorPage` still passes
+  `allSchemas` unfiltered. Loading state is already covered by TanStack
+  Query's cache from `useSchemas()`, so it wasn't touched.
+- **Tests:** New `ReferenceTargetPicker.test.tsx` — lists schemas as options,
+  reflects selected value, calls `onChange` with the chosen id, shows the
+  empty state with no `<select>` when `schemas=[]`. Existing
+  `SchemaFieldRow.test.tsx` reference-select test still green unmodified. 85
+  frontend tests green; `tsc -b --noEmit` clean.
+- **Next:** `4.x` continues; flag for `5.4` (reference field: target dropdown
+  + jump-to-entry link) — self/circular references (e.g. `Category → parent →
+  parent → ...`) need a depth limit when resolving/rendering reference chains
+  in the entry editor, to avoid infinite render loops.

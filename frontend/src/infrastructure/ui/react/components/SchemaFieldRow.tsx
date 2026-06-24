@@ -1,4 +1,5 @@
 import type { Field, FieldType, Schema } from '@cms/shared';
+import { ReferenceTargetPicker } from './ReferenceTargetPicker';
 import styles from './SchemaFieldRow.module.css';
 
 export interface FieldDraft {
@@ -55,20 +56,12 @@ export function SchemaFieldRow({
       </select>
 
       {field.type === 'reference' && (
-        <select
-          aria-label={`Field ${index + 1} reference target`}
-          value={field.refSchemaId ?? ''}
-          onChange={(e) => onChange({ refSchemaId: e.target.value })}
-        >
-          <option value="" disabled>
-            Select a content type…
-          </option>
-          {schemas.map((schema) => (
-            <option key={schema.id} value={schema.id}>
-              {schema.name}
-            </option>
-          ))}
-        </select>
+        <ReferenceTargetPicker
+          index={index}
+          value={field.refSchemaId}
+          schemas={schemas}
+          onChange={(refSchemaId) => onChange({ refSchemaId })}
+        />
       )}
 
       <label>
