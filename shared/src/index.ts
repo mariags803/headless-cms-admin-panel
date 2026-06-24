@@ -11,3 +11,5 @@ export type {
   ValidationError,
 } from './contract';
 export { validateEntry } from './validation/validateEntry';
+export { diffSchemas } from './evolution/diffSchemas';
+export { classifyRisk } from './evolution/classifyRisk';

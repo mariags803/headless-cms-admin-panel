@@ -599,3 +599,22 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   `FieldRegistry.test.tsx` (it no longer renders a plain text input for `reference`).
   122 frontend tests green; `tsc --noEmit` and `eslint` clean.
 - **Next:** Phase 6 — schema evolution (`6.1` `diffSchemas` + `classifyRisk`).
+
+### [2026-06-24] 6.1 — diffSchemas + classifyRisk
+- **Did:** Added the first stage of the pure evolution pipeline in `shared/src/evolution/`:
+  `diffSchemas(old, next)` matches fields by `id` (never by name) and emits a
+  `SchemaChange[]` — removed fields first (old-array order), then renamed/retyped/
+  requiredChanged/refRetargeted per matched field in that fixed sub-order, then added
+  fields (next-array order). `classifyRisk(change)` maps each change to a `RiskLevel`.
+- **Decisions:** `classifyRisk` takes only a `SchemaChange`, no `Entry[]` — retype risk
+  uses a structural from/to `FieldType` coercibility table (`text` is the universal
+  "maybe" partner for number/boolean/date; `reference` is always destructive both ways;
+  `number<->boolean` is a warning judgment call). Real per-value verdicts are deferred
+  to `6.2`'s `scanAffected`/`coerce`, keeping `6.1` pure and decoupled from `Entry`.
+- **Tests:** `diffSchemas` — add, remove, rename, retype, required true/false,
+  refRetarget (incl. from `undefined`), combined multi-change on one field (sub-order),
+  multiple fields in one diff, no-op, empty schemas, field-array reordering with no
+  value changes. `classifyRisk` — one case per change kind, every coercible/non-coercible
+  retype pair via `it.each`, defensive same-type retype. 48 shared tests green;
+  `tsc --noEmit` clean.
+- **Next:** `6.2` — `scanAffected` + `coerce`.
