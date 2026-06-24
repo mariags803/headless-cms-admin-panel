@@ -510,3 +510,29 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   + jump-to-entry link) — self/circular references (e.g. `Category → parent →
   parent → ...`) need a depth limit when resolving/rendering reference chains
   in the entry editor, to avoid infinite render loops.
+
+### [2026-06-24] 5.1 — Field registry
+- **Did:** Added `frontend/src/infrastructure/ui/react/components/fields/`:
+  one component per `FieldType` (`TextInput`, `NumberInput`, `BooleanInput`,
+  `DateInput`, `ReferenceInput`), all implementing the same `FieldInputProps`
+  contract (`field`, `value`, `onChange`, `error`). `FIELD_INPUTS` is the
+  `FieldType → component` map; `FieldInput` is the single dispatch wrapper
+  that looks up `FIELD_INPUTS[field.type]` and renders it, so the schema-
+  generated form (5.3) never branches on `field.type` itself. Co-located
+  `FieldInput.module.css` shared by all five inputs (one input class +
+  `data-invalid`), per `css-conventions`.
+- **Decisions:** `ReferenceInput` renders as a plain text input holding the
+  raw target entry id (string) for now — no dropdown, no lookup. Its prop
+  signature is identical to the other four inputs and is considered final:
+  `5.4` only swaps `ReferenceInput`'s internals (dropdown of target schema's
+  entries + jump-to-entry link) without touching `FieldInputProps`,
+  `FIELD_INPUTS`, or any caller.
+- **Tests:** New `FieldRegistry.test.tsx` — `FIELD_INPUTS` covers all 5
+  `FieldType`s; `FieldInput` dispatches to the right `<input type>` per
+  field type; each input renders its current value and calls `onChange` with
+  the correctly typed value (number input emits `null` not `NaN` when
+  cleared; boolean toggles; reference treats value as a plain id string);
+  error prop renders a `role="alert"`. 99 frontend tests green; `tsc -b` and
+  `vite build` clean.
+- **Next:** `5.2` (entry table per schema), then `5.3` wires `FieldInput`
+  into the schema-generated entry form.
