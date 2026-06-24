@@ -30,7 +30,7 @@ describe('SchemaController', () => {
       schema: {
         createSchema: new CreateSchema(repo, eventPublisher),
         listSchemas: new ListSchemas(repo),
-        updateSchema: new UpdateSchema(repo, eventPublisher),
+        updateSchema: new UpdateSchema(repo, entryRepo, eventPublisher),
         deleteSchema: new DeleteSchema(repo, eventPublisher),
       },
       entry: {

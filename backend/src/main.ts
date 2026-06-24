@@ -24,7 +24,7 @@ const app = createServer({
   schema: {
     createSchema: new CreateSchema(schemaRepo, eventPublisher),
     listSchemas: new ListSchemas(schemaRepo),
-    updateSchema: new UpdateSchema(schemaRepo, eventPublisher),
+    updateSchema: new UpdateSchema(schemaRepo, entryRepo, eventPublisher),
     deleteSchema: new DeleteSchema(schemaRepo, eventPublisher),
   },
   entry: {

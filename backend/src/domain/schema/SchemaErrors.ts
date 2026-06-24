@@ -9,3 +9,9 @@ export class InvalidSchema extends Error {
     super(errors.join('; '));
   }
 }
+
+export class EvolutionBlocked extends Error {
+  constructor(public readonly affected: { entryId: string; fieldId: string }[]) {
+    super('Schema update rejected: some affected entries have values that cannot be converted.');
+  }
+}

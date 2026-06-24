@@ -289,6 +289,40 @@ describe('SchemaEditorPage — edit mode', () => {
     expect(screen.queryByRole('heading', { name: /revisar cambios/i })).not.toBeInTheDocument();
   });
 
+  it('fixes the affected entry before submitting the schema update when retyping a field', async () => {
+    const affectedEntry = { id: 'e1', schemaId: 's1', data: { f1: 'vintage' }, createdAt: '', updatedAt: '' };
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      updateSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      listEntries: { execute: jest.fn().mockResolvedValue([affectedEntry]) } as never,
+      updateEntry: { execute: jest.fn().mockResolvedValue(affectedEntry) } as never,
+    });
+    renderPage(useCases, '/schemas/s1/edit');
+
+    await screen.findByLabelText(/^name$/i);
+    fireEvent.change(screen.getByLabelText('Field 1 type'), { target: { value: 'number' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByRole('heading', { name: /revisar cambios/i });
+
+    const confirmButton = screen.getByRole('button', { name: /confirmar/i });
+    expect(confirmButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('brand'), { target: { value: '1999' } });
+    expect(confirmButton).toBeEnabled();
+    fireEvent.click(confirmButton);
+
+    await waitFor(() =>
+      expect(useCases.updateEntry.execute).toHaveBeenCalledWith('e1', { data: { f1: 1999 } }),
+    );
+    await waitFor(() =>
+      expect(useCases.updateSchema.execute).toHaveBeenCalledWith('s1', {
+        name: 'Car',
+        fields: [{ id: 'f1', name: 'brand', type: 'number', required: true }],
+      }),
+    );
+    expect(await screen.findByText('Content Types page')).toBeInTheDocument();
+  });
+
   it('cancels the evolution preview without submitting, restoring the editable form', async () => {
     const useCases = fakeUseCases({
       getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,

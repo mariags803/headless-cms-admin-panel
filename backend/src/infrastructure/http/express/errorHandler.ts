@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler } from 'express';
-import { InvalidSchema, SchemaNotFound } from '../../../domain/schema/SchemaErrors';
+import { EvolutionBlocked, InvalidSchema, SchemaNotFound } from '../../../domain/schema/SchemaErrors';
 import { EntryNotFound, InvalidEntry } from '../../../domain/entry/EntryErrors';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
@@ -9,6 +9,10 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
   if (err instanceof InvalidSchema || err instanceof InvalidEntry) {
     res.status(400).json({ error: 'VALIDATION_ERROR', message: err.message, details: err.errors });
+    return;
+  }
+  if (err instanceof EvolutionBlocked) {
+    res.status(409).json({ error: 'EVOLUTION_BLOCKED', message: err.message, affected: err.affected });
     return;
   }
   console.error(err);

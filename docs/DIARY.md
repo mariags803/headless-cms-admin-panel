@@ -674,3 +674,38 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   closes the modal and shows the banner; Cancel submits nothing and restores the
   form. Full frontend suite (138 tests) and `tsc --noEmit` green.
 - **Next:** `6.4` — inline fixer (edit/coerce affected values before applying).
+
+### [2026-06-24] 6.4 — fixer (inline edit/bulk transform) + server re-validation
+- **Did:** `EvolutionPreviewModal` is no longer read-only: each affected row (except
+  `field.removed`, which is purely informational since the data is dropped anyway)
+  now renders the existing field-registry `FieldInput` for the *candidate* field type,
+  reusing the same `TextInput`/`NumberInput`/`BooleanInput`/`DateInput`/`ReferenceInput`
+  components built for the entry editor in 5.x — no new input widgets. Rows default to
+  `coerced.value` when coercible, blank otherwise. A field that becomes required with
+  empty entries, or a non-coercible retype, blocks Confirm until the row is filled. An
+  "Aplicar conversion sugerida a todas" button bulk-fills every row whose `coerce`
+  succeeded. `onConfirm` now passes `Record<entryId, Record<fieldId, FieldValue>>`;
+  `SchemaEditorPage.handleConfirmEvolution` updates each affected entry via
+  `useUpdateEntry` (merging into the existing `entry.data`) before calling the existing
+  schema-update mutation, and aborts (banner, modal stays open) if any entry fix fails.
+  Backend `UpdateSchema` now takes an `EntryRepository` and re-runs
+  `diffSchemas → scanAffected` against the schema's entries before saving; if any
+  affected row still has `coerced.ok === false` it throws the new `EvolutionBlocked`
+  domain error (mapped to HTTP 409) instead of persisting — a safety net for clients
+  that bypass or diverge from the preview, since the normal flow already fixes entries
+  client-side first.
+- **Decisions:** `field.refRetargeted` rows reuse `ReferenceInput` directly against the
+  *candidate* field's `refSchemaId`, so re-picking a valid target is a real dropdown,
+  not a placeholder "clear" button; default is `null` (no selection), which is always a
+  valid resolution so it never blocks Confirm. Risk classification stays frontend-only;
+  the server only re-checks coercion, since that's the one thing a divergent client
+  could otherwise smuggle past validation.
+- **Tests:** `EvolutionPreviewModal` — Confirm disabled until a non-coercible retype is
+  filled then re-enabled, bulk-apply fills every coercible row and `onConfirm` groups
+  values by entry. `SchemaEditorPage` — confirming a retype calls `updateEntry` with the
+  merged data before `updateSchema`, gated by the same disabled-Confirm UX.
+  `UpdateSchema` — rejects with `EvolutionBlocked` when an affected entry was not fixed,
+  accepts once it was. Full `shared`/`backend`/`frontend` suites (78/92/141 tests) and
+  `tsc -b` green.
+- **Next:** `6.5` — mid-edit reconciliation: a `schema.updated` event arriving while an
+  entry is open must not discard in-progress input.

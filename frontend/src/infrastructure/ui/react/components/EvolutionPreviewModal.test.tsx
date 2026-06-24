@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { Field } from '@cms/shared';
 import type { EvolutionPlan } from '../../../../application/evolution/buildEvolutionPlan';
 import { EvolutionPreviewModal } from './EvolutionPreviewModal';
+
+const yearField: Field = { id: 'f1', name: 'year', type: 'number', required: false };
 
 function makePlan(overrides: Partial<EvolutionPlan> = {}): EvolutionPlan {
   return {
@@ -23,6 +26,7 @@ describe('EvolutionPreviewModal', () => {
       <EvolutionPreviewModal
         plan={makePlan()}
         fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
         schemaName="Car"
         submitting={false}
         onConfirm={jest.fn()}
@@ -39,6 +43,7 @@ describe('EvolutionPreviewModal', () => {
       <EvolutionPreviewModal
         plan={makePlan()}
         fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
         schemaName="Car"
         submitting={false}
         onConfirm={jest.fn()}
@@ -62,6 +67,7 @@ describe('EvolutionPreviewModal', () => {
       <EvolutionPreviewModal
         plan={plan}
         fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
         schemaName="Car"
         submitting={false}
         onConfirm={jest.fn()}
@@ -74,12 +80,68 @@ describe('EvolutionPreviewModal', () => {
     expect(screen.getByText(/no se puede convertir/)).toBeInTheDocument();
   });
 
+  it('disables Confirm until a non-coercible retype is fixed, then enables it once filled', () => {
+    const plan = makePlan({
+      affected: [{ entryId: 'e2', fieldId: 'f1', currentValue: 'vintage', coerced: { ok: false } }],
+      highestRisk: 'destructive',
+      hasBlockingChanges: true,
+    });
+    render(
+      <EvolutionPreviewModal
+        plan={plan}
+        fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
+        schemaName="Car"
+        submitting={false}
+        onConfirm={jest.fn()}
+        onCancel={jest.fn()}
+      />,
+    );
+
+    const confirmButton = screen.getByRole('button', { name: 'Confirmar' });
+    expect(confirmButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('year'), { target: { value: '1999' } });
+
+    expect(confirmButton).toBeEnabled();
+  });
+
+  it('"Aplicar conversión sugerida a todas" fills every coercible row, and onConfirm groups values by entry', () => {
+    const onConfirm = jest.fn();
+    const plan = makePlan({
+      affected: [
+        { entryId: 'e1', fieldId: 'f1', currentValue: '2024', coerced: { ok: true, value: 2024 } },
+        { entryId: 'e3', fieldId: 'f1', currentValue: '1998', coerced: { ok: true, value: 1998 } },
+      ],
+    });
+    render(
+      <EvolutionPreviewModal
+        plan={plan}
+        fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
+        schemaName="Car"
+        submitting={false}
+        onConfirm={onConfirm}
+        onCancel={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar conversión sugerida a todas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      e1: { f1: 2024 },
+      e3: { f1: 1998 },
+    });
+  });
+
   it('calls onCancel when Cancelar is clicked', () => {
     const onCancel = jest.fn();
     render(
       <EvolutionPreviewModal
         plan={makePlan()}
         fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
         schemaName="Car"
         submitting={false}
         onConfirm={jest.fn()}
@@ -97,6 +159,7 @@ describe('EvolutionPreviewModal', () => {
       <EvolutionPreviewModal
         plan={makePlan()}
         fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
         schemaName="Car"
         submitting={false}
         onConfirm={onConfirm}
@@ -113,6 +176,7 @@ describe('EvolutionPreviewModal', () => {
       <EvolutionPreviewModal
         plan={makePlan()}
         fieldNames={{ f1: 'year' }}
+        candidateFields={{ f1: yearField }}
         schemaName="Car"
         submitting
         onConfirm={jest.fn()}

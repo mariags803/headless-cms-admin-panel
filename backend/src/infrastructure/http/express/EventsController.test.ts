@@ -32,7 +32,7 @@ describe('GET /events', () => {
       schema: {
         createSchema: new CreateSchema(schemaRepo, publisher),
         listSchemas: new ListSchemas(schemaRepo),
-        updateSchema: new UpdateSchema(schemaRepo, publisher),
+        updateSchema: new UpdateSchema(schemaRepo, entryRepo, publisher),
         deleteSchema: new DeleteSchema(schemaRepo, publisher),
       },
       entry: {
