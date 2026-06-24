@@ -23,6 +23,13 @@
   --space-8: 2rem;
   --radius: 0.5rem;
 
+  --risk-safe: #1a7f37;
+  --risk-safe-bg: #d8f3dc;
+  --risk-warning: #9a6700;
+  --risk-warning-bg: #fff3cd;
+  --risk-destructive: #b42318;
+  --risk-destructive-bg: #fde2e1;
+
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
@@ -51,6 +58,13 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+
+    --risk-safe: #4ade80;
+    --risk-safe-bg: rgba(74, 222, 128, 0.15);
+    --risk-warning: #facc15;
+    --risk-warning-bg: rgba(250, 204, 21, 0.15);
+    --risk-destructive: #f87171;
+    --risk-destructive-bg: rgba(248, 113, 113, 0.15);
   }
 
   #social .button-icon {

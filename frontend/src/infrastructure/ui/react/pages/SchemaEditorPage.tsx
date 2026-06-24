@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { Field, Schema } from '@cms/shared';
 import { useSchema } from '../hooks/useSchema';
 import { useSchemas } from '../hooks/useSchemas';
+import { useEntries } from '../hooks/useEntries';
 import { useCreateSchema } from '../hooks/useCreateSchema';
 import { useUpdateSchema } from '../hooks/useUpdateSchema';
 import { SchemaFieldRow, toFieldPayload, type FieldDraft } from '../components/SchemaFieldRow';
+import { EvolutionPreviewModal } from '../components/EvolutionPreviewModal';
+import { buildEvolutionPlan, type EvolutionPlan } from '../../../../application/evolution/buildEvolutionPlan';
+import type { SchemaUpdateInput } from '../../../../domain/schema/SchemaRepository';
 import styles from './SchemaEditorPage.module.css';
 
 function swap<T>(items: T[], a: number, b: number): T[] {
@@ -20,6 +25,7 @@ export function SchemaEditorPage() {
 
   const { data: schema, isLoading, error } = useSchema(schemaId);
   const { data: allSchemas } = useSchemas();
+  const { data: entries } = useEntries(isEdit ? schemaId : undefined);
   const { mutate: createSchema, isPending: isCreating } = useCreateSchema();
   const { mutate: updateSchema, isPending: isUpdating } = useUpdateSchema();
   const isSubmitting = isCreating || isUpdating;
@@ -29,6 +35,8 @@ export function SchemaEditorPage() {
   const [nameError, setNameError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<number, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<EvolutionPlan | null>(null);
+  const [pendingInput, setPendingInput] = useState<SchemaUpdateInput | null>(null);
   const seededRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -95,6 +103,38 @@ export function SchemaEditorPage() {
     return valid;
   }
 
+  function submitUpdate(input: SchemaUpdateInput) {
+    updateSchema(
+      { id: schemaId as string, input },
+      {
+        onSuccess: () => navigate('/schemas'),
+        onError: (err) => setSubmitError(err.message),
+      },
+    );
+  }
+
+  function buildCandidateSchema(): Schema {
+    const candidateFields: Field[] = fields.map((field) => ({
+      id: field.id ?? `__new__${field.key}`,
+      name: field.name.trim(),
+      type: field.type,
+      required: field.required,
+      ...(field.type === 'reference' ? { refSchemaId: field.refSchemaId } : {}),
+    }));
+    return { ...(schema as Schema), name: name.trim(), fields: candidateFields };
+  }
+
+  function buildFieldNames(candidate: Schema): Record<string, string> {
+    const names: Record<string, string> = {};
+    schema?.fields.forEach((field) => {
+      names[field.id] = field.name;
+    });
+    candidate.fields.forEach((field) => {
+      names[field.id] = field.name;
+    });
+    return names;
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitError(null);
@@ -105,19 +145,32 @@ export function SchemaEditorPage() {
     const input = { name: name.trim(), fields: fields.map(toFieldPayload) };
 
     if (isEdit) {
-      updateSchema(
-        { id: schemaId as string, input },
-        {
-          onSuccess: () => navigate('/schemas'),
-          onError: (err) => setSubmitError(err.message),
-        },
-      );
+      const candidate = buildCandidateSchema();
+      const plan = buildEvolutionPlan(schema as Schema, candidate, entries ?? []);
+      if (plan.highestRisk === 'safe') {
+        submitUpdate(input);
+      } else {
+        setPendingPlan(plan);
+        setPendingInput(input);
+      }
     } else {
       createSchema(input, {
         onSuccess: () => navigate('/schemas'),
         onError: (err) => setSubmitError(err.message),
       });
     }
+  }
+
+  function handleConfirmEvolution() {
+    if (!pendingInput) return;
+    submitUpdate(pendingInput);
+    setPendingPlan(null);
+    setPendingInput(null);
+  }
+
+  function handleCancelEvolution() {
+    setPendingPlan(null);
+    setPendingInput(null);
   }
 
   if (isEdit && isLoading) {
@@ -171,6 +224,17 @@ export function SchemaEditorPage() {
           </button>
         </div>
       </form>
+
+      {pendingPlan && (
+        <EvolutionPreviewModal
+          plan={pendingPlan}
+          fieldNames={buildFieldNames(buildCandidateSchema())}
+          schemaName={name.trim()}
+          submitting={isSubmitting}
+          onConfirm={handleConfirmEvolution}
+          onCancel={handleCancelEvolution}
+        />
+      )}
     </section>
   );
 }

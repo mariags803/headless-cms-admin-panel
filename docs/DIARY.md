@@ -643,3 +643,34 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   fewer. 78 shared tests green; `tsc --noEmit` clean; full repo suite (290 tests across
   shared/backend/frontend) green.
 - **Next:** `6.3` — preview modal (changes, risk badges, affected count + list).
+
+### [2026-06-24] 6.3 — evolution preview modal
+- **Did:** `frontend/src/application/evolution/buildEvolutionPlan.ts` composes
+  `diffSchemas → classifyRisk → scanAffected` (all from `shared/`) into one
+  `EvolutionPlan { changes, affected, highestRisk, hasBlockingChanges }`.
+  `EvolutionPreviewModal.tsx` is the first real modal in the codebase — native
+  `<dialog>` + `showModal()` for the free focus trap/Escape, risk badges per change,
+  affected-entries list with coercion outcome, Cancel/Confirm. `SchemaEditorPage`'s
+  `handleSubmit` now builds a candidate `Schema` from the draft, runs
+  `buildEvolutionPlan`, and only gates on the modal when `highestRisk !== 'safe'`;
+  no-op or all-safe diffs (rename, add) submit exactly as before.
+- **Decisions:** `highestRisk` is bumped to `destructive` whenever any affected
+  entry's `coerced` is `{ ok: false }`, even if the change's structural risk is
+  `warning` — the canonical `year` text→number case must read as destructive once
+  real data fails to convert, not just "maybe risky". Confirm stays enabled
+  regardless of risk; blocking on destructive changes is `6.4`'s job, not `6.3`'s.
+  On mutation failure after confirming, the modal closes and the existing
+  `submitError` banner is reused — no new inline-error UI. `fieldNames` (fieldId→
+  name) is built by the page from old ∪ candidate fields and passed down so the
+  modal stays a pure renderer, no `Schema` shape coupling. jsdom doesn't implement
+  `<dialog>`'s imperative API, so `showModal`/`close` are polyfilled once in
+  `frontend/src/test/setup.ts`.
+- **Tests:** `buildEvolutionPlan` — no-op, safe rename, coercible warning, the hard
+  uncoercible retype (destructive), destructive removal, worst-risk-wins reduction.
+  `EvolutionPreviewModal` — badge rendering, affected-list conditional rendering,
+  coercible vs non-coercible row text, Cancel/Confirm callbacks, disabled while
+  submitting. `SchemaEditorPage` — non-safe diff shows the modal instead of
+  submitting; Confirm submits the built input and navigates; Confirm-then-error
+  closes the modal and shows the banner; Cancel submits nothing and restores the
+  form. Full frontend suite (138 tests) and `tsc --noEmit` green.
+- **Next:** `6.4` — inline fixer (edit/coerce affected values before applying).

@@ -1,0 +1,60 @@
+@layer components {
+  .dialog {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-6);
+    max-width: 32rem;
+    box-shadow: var(--shadow);
+  }
+
+  .dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .changeList,
+  .affectedList {
+    list-style: none;
+    margin: var(--space-4) 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .changeRow,
+  .affectedRow {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .badge {
+    border-radius: var(--radius);
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .badge[data-risk='safe'] {
+    color: var(--risk-safe);
+    background: var(--risk-safe-bg);
+  }
+
+  .badge[data-risk='warning'] {
+    color: var(--risk-warning);
+    background: var(--risk-warning-bg);
+  }
+
+  .badge[data-risk='destructive'] {
+    color: var(--risk-destructive);
+    background: var(--risk-destructive-bg);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+}

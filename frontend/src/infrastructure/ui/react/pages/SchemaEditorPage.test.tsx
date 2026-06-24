@@ -235,4 +235,75 @@ describe('SchemaEditorPage — edit mode', () => {
 
     expect(await screen.findByRole('button', { name: /saving/i })).toBeDisabled();
   });
+
+  it('shows the evolution preview modal instead of submitting when a change is non-safe', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
+    });
+    renderPage(useCases, '/schemas/s1/edit');
+
+    await screen.findByLabelText(/^name$/i);
+    fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(await screen.findByRole('heading', { name: /revisar cambios/i })).toBeInTheDocument();
+    expect(useCases.updateSchema.execute).not.toHaveBeenCalled();
+  });
+
+  it('submits the update when the evolution preview is confirmed, then navigates', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      updateSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
+    });
+    renderPage(useCases, '/schemas/s1/edit');
+
+    await screen.findByLabelText(/^name$/i);
+    fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByRole('heading', { name: /revisar cambios/i });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    await waitFor(() =>
+      expect(useCases.updateSchema.execute).toHaveBeenCalledWith('s1', { name: 'Car', fields: [] }),
+    );
+    expect(await screen.findByText('Content Types page')).toBeInTheDocument();
+  });
+
+  it('closes the modal and shows the submit error banner when confirming fails', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      updateSchema: { execute: jest.fn().mockRejectedValue(new Error('boom')) } as never,
+      listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
+    });
+    renderPage(useCases, '/schemas/s1/edit');
+
+    await screen.findByLabelText(/^name$/i);
+    fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByRole('heading', { name: /revisar cambios/i });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('boom');
+    expect(screen.queryByRole('heading', { name: /revisar cambios/i })).not.toBeInTheDocument();
+  });
+
+  it('cancels the evolution preview without submitting, restoring the editable form', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,
+      listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
+    });
+    renderPage(useCases, '/schemas/s1/edit');
+
+    await screen.findByLabelText(/^name$/i);
+    fireEvent.click(screen.getByRole('button', { name: /remove field/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByRole('heading', { name: /revisar cambios/i });
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+
+    expect(screen.queryByRole('heading', { name: /revisar cambios/i })).not.toBeInTheDocument();
+    expect(useCases.updateSchema.execute).not.toHaveBeenCalled();
+    expect(screen.queryByText('Content Types page')).not.toBeInTheDocument();
+  });
 });
