@@ -555,3 +555,25 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   frontend tests green; `tsc --noEmit` clean.
 - **Next:** `5.3` — generate the entry form from the schema using the `5.1` field
   registry.
+
+### [2026-06-24] 5.3 — Schema-generated form
+- **Did:** Replaced the `EntryEditorPage` stub with a real form: `useSchema(schemaId)`
+  drives which fields render (via the `5.1` `FieldInput` registry dispatch — never a
+  per-type branch in the page itself), `useEntry(schemaId, entryId)` seeds the form in
+  edit mode, and `useCreateEntry`/`useUpdateEntry` submit. Form state is
+  `Record<fieldId, FieldValue>`, never keyed by name. Validation reuses the shared
+  `validateEntry(data, schema)` instead of duplicating the required-field check.
+  Save/Cancel both navigate back to `/schemas/:schemaId/entries`.
+- **Decisions:** Default values per `FieldType` for new entries match each input's own
+  "empty" sentinel: `text → ''`, `number/date/reference → null`, `boolean → false`.
+  Field labels render as a plain `<span>`, not a `<label>` wrapper, because each
+  `FieldInput` already sets its own `aria-label={field.name}` — wrapping it would
+  create two competing accessible names.
+- **Tests:** New `EntryEditorPage.test.tsx` (new-mode defaults, required-field block,
+  create submit keyed by field id, create error, pending "Saving…" state, cancel nav,
+  edit-mode loading/seeding/error, update submit). Also fixed two stale
+  `AppRoutes.test.tsx` assertions (stub heading text, missing `getEntry` mock). 117
+  frontend tests green; `tsc --noEmit` and `eslint` clean. Manually verified end-to-end
+  in the browser (create, required validation, edit with seeded values, cancel) via a
+  scripted Playwright run against the real backend.
+- **Next:** `5.4` — reference field: target dropdown + jump-to-entry link.

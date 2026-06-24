@@ -20,7 +20,15 @@ function fakeUseCases(): UseCases {
     updateSchema: {} as never,
     deleteSchema: {} as never,
     listEntries: { execute: jest.fn().mockResolvedValue([]) } as never,
-    getEntry: {} as never,
+    getEntry: {
+      execute: jest.fn().mockResolvedValue({
+        id: 'c1',
+        schemaId: 'car',
+        data: {},
+        createdAt: '',
+        updatedAt: '',
+      }),
+    } as never,
     createEntry: {} as never,
     updateEntry: {} as never,
     deleteEntry: {} as never,
@@ -64,13 +72,13 @@ describe('AppRoutes', () => {
     expect(await screen.findByRole('heading', { name: 'Car entries' })).toBeInTheDocument()
   })
 
-  it('renders EntryEditorPage at /schemas/:schemaId/entries/new', () => {
+  it('renders EntryEditorPage at /schemas/:schemaId/entries/new', async () => {
     renderAt('/schemas/car/entries/new')
-    expect(screen.getByRole('heading', { name: 'New Entry — car' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'New Entry — Car' })).toBeInTheDocument()
   })
 
-  it('renders EntryEditorPage at /schemas/:schemaId/entries/:entryId/edit', () => {
+  it('renders EntryEditorPage at /schemas/:schemaId/entries/:entryId/edit', async () => {
     renderAt('/schemas/car/entries/c1/edit')
-    expect(screen.getByRole('heading', { name: 'Edit Entry — car' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Edit Entry — Car' })).toBeInTheDocument()
   })
 })
