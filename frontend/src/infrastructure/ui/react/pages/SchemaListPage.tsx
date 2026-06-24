@@ -27,7 +27,7 @@ export function SchemaListPage() {
       {error && <p role="alert">{error.message}</p>}
 
       {schemas && schemas.length === 0 && (
-        <p className={styles.empty}>No content types yet. Create your first one.</p>
+        <p className="emptyState">No content types yet. Create your first one.</p>
       )}
 
       {schemas && schemas.length > 0 && (

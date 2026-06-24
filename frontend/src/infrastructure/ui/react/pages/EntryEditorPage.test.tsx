@@ -178,6 +178,16 @@ describe('EntryEditorPage — edit mode', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('network down');
   });
 
+  it('shows an alert instead of a blank page when the schema resolves to nothing', async () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn().mockResolvedValue(null) } as never,
+      getEntry: { execute: jest.fn().mockResolvedValue(carEntry) } as never,
+    });
+    renderPage(useCases, '/schemas/s1/entries/e1/edit');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/content type not found/i);
+  });
+
   it('submits an update with the edited data, then navigates', async () => {
     const useCases = fakeUseCases({
       getSchema: { execute: jest.fn().mockResolvedValue(carSchema) } as never,

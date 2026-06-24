@@ -1,0 +1,15 @@
+@layer components {
+  .badge {
+    position: fixed;
+    bottom: var(--space-4);
+    right: var(--space-4);
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    color: var(--risk-destructive);
+    background: var(--risk-destructive-bg);
+    box-shadow: var(--shadow);
+    font-size: 0.875rem;
+    z-index: 1000;
+  }
+}

@@ -43,7 +43,7 @@ export function EntryListPage() {
       {error && <p role="alert">{error.message}</p>}
 
       {entries && entries.length === 0 && (
-        <p className={styles.empty}>No entries yet. Create your first one.</p>
+        <p className="emptyState">No entries yet. Create your first one.</p>
       )}
 
       {schema && entries && entries.length > 0 && (

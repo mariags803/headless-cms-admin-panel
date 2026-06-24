@@ -1,5 +1,4 @@
 import type { Schema } from '@cms/shared';
-import styles from './ReferenceTargetPicker.module.css';
 
 export interface ReferenceTargetPickerProps {
   index: number;
@@ -10,7 +9,7 @@ export interface ReferenceTargetPickerProps {
 
 export function ReferenceTargetPicker({ index, value, schemas, onChange }: ReferenceTargetPickerProps) {
   if (schemas.length === 0) {
-    return <p className={styles.empty}>No hay otros tipos de contenido disponibles.</p>;
+    return <p className="inlineEmpty">No hay otros tipos de contenido disponibles.</p>;
   }
 
   return (

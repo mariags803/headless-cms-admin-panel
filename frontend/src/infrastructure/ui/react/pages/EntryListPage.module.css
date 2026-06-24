@@ -27,11 +27,6 @@
     outline-offset: 2px;
   }
 
-  .empty {
-    margin-top: var(--space-6);
-    color: var(--text);
-  }
-
   .table {
     width: 100%;
     border-collapse: collapse;

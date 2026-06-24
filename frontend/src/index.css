@@ -131,3 +131,26 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+@layer components {
+  .emptyState {
+    margin-top: var(--space-6);
+    color: var(--text);
+  }
+
+  .inlineEmpty {
+    color: var(--text);
+    opacity: 0.6;
+    font-style: italic;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -240,7 +240,7 @@ export function SchemaEditorPage() {
         {submitError && <p role="alert">{submitError}</p>}
 
         <div className={styles.actions}>
-          <button type="submit" disabled={isSubmitting}>
+          <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : 'Save'}
           </button>
         </div>

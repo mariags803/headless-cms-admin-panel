@@ -19,14 +19,4 @@
     align-items: center;
     gap: var(--space-2);
   }
-
-  .link {
-    white-space: nowrap;
-  }
-
-  .empty {
-    color: var(--text);
-    opacity: 0.6;
-    font-style: italic;
-  }
 }

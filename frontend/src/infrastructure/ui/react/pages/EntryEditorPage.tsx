@@ -187,7 +187,7 @@ export function EntryEditorPage() {
   }
 
   if (!activeSchema) {
-    return null;
+    return <p role="alert">Content type not found. It may have been deleted.</p>;
   }
 
   return (
@@ -236,10 +236,14 @@ export function EntryEditorPage() {
         {submitError && <p role="alert">{submitError}</p>}
 
         <div className={styles.actions}>
-          <button type="submit" disabled={isSubmitting}>
+          <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : 'Save'}
           </button>
-          <button type="button" onClick={() => navigate(`/schemas/${schemaId}/entries`)}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={() => navigate(`/schemas/${schemaId}/entries`)}
+          >
             Cancel
           </button>
         </div>

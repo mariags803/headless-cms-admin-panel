@@ -48,4 +48,24 @@
     display: flex;
     gap: var(--space-3);
   }
+
+  .saveButton {
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .saveButton:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .saveButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }

@@ -1,5 +1,4 @@
 import type { Entry, Schema } from '@cms/shared';
-import { Link } from 'react-router-dom';
 import type { FieldInputProps } from './FieldInputProps';
 import { useSchema } from '../../hooks/useSchema';
 import { useEntries } from '../../hooks/useEntries';
@@ -20,7 +19,7 @@ export function ReferenceInput({ field, value, onChange, error }: FieldInputProp
   if (!isLoading && (entries ?? []).length === 0) {
     return (
       <>
-        <p className={styles.empty}>No entries available for this reference yet.</p>
+        <p className="inlineEmpty">No entries available for this reference yet.</p>
         {error && <p role="alert">{error}</p>}
       </>
     );
@@ -28,6 +27,7 @@ export function ReferenceInput({ field, value, onChange, error }: FieldInputProp
 
   return (
     <>
+      {isLoading && <p data-state="loading">Loading options…</p>}
       <div className={styles.row}>
         <select
           className={styles.input}
@@ -44,11 +44,6 @@ export function ReferenceInput({ field, value, onChange, error }: FieldInputProp
             </option>
           ))}
         </select>
-        {currentValue && (
-          <Link className={styles.link} to={`/schemas/${field.refSchemaId}/entries/${currentValue}/edit`}>
-            View entry →
-          </Link>
-        )}
       </div>
       {error && <p role="alert">{error}</p>}
     </>

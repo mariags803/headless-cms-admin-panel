@@ -103,26 +103,25 @@ describe('ReferenceInput', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('renders a jump-to-entry link when a value is selected', async () => {
+  it('does not render a jump-to-entry link, even when a value is selected', async () => {
     const useCases = fakeUseCases({
       getSchema: { execute: jest.fn().mockResolvedValue(personSchema) } as never,
       listEntries: { execute: jest.fn().mockResolvedValue([aliceEntry]) } as never,
     });
     renderInput(useCases, { value: 'e1' });
 
-    const link = await screen.findByRole('link', { name: /view entry/i });
-    expect(link).toHaveAttribute('href', '/schemas/s2/entries/e1/edit');
-  });
-
-  it('renders no jump link when value is null', async () => {
-    const useCases = fakeUseCases({
-      getSchema: { execute: jest.fn().mockResolvedValue(personSchema) } as never,
-      listEntries: { execute: jest.fn().mockResolvedValue([aliceEntry]) } as never,
-    });
-    renderInput(useCases, { value: null });
-
     await screen.findByRole('option', { name: 'Alice' });
     expect(screen.queryByRole('link', { name: /view entry/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a loading message while schema/entries are pending', () => {
+    const useCases = fakeUseCases({
+      getSchema: { execute: jest.fn(() => new Promise(() => {})) } as never,
+      listEntries: { execute: jest.fn(() => new Promise(() => {})) } as never,
+    });
+    renderInput(useCases);
+
+    expect(screen.getByText(/loading options/i)).toBeInTheDocument();
   });
 
   it('shows an empty-state message when the target schema has no entries', async () => {

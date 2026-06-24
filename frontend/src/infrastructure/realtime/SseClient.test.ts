@@ -3,6 +3,8 @@ import { SseClient } from './SseClient';
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
   onmessage: ((event: { data: string }) => void) | null = null;
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
   close = jest.fn();
 
   readonly url: string;
@@ -14,6 +16,14 @@ class FakeEventSource {
 
   emit(data: unknown) {
     this.onmessage?.({ data: JSON.stringify(data) });
+  }
+
+  open() {
+    this.onopen?.();
+  }
+
+  error() {
+    this.onerror?.();
   }
 }
 
@@ -89,5 +99,61 @@ describe('SseClient', () => {
     client.subscribe(() => {});
 
     expect(FakeEventSource.instances).toHaveLength(2);
+  });
+
+  it('starts as connecting, then flips to open on onopen', () => {
+    const client = new SseClient('http://localhost:3001/events', FakeEventSource as never);
+    expect(client.getStatus()).toBe('connecting');
+
+    client.subscribe(() => {});
+    expect(client.getStatus()).toBe('connecting');
+
+    FakeEventSource.instances[0].open();
+    expect(client.getStatus()).toBe('open');
+  });
+
+  it('flips to closed on onerror', () => {
+    const client = new SseClient('http://localhost:3001/events', FakeEventSource as never);
+    client.subscribe(() => {});
+    FakeEventSource.instances[0].open();
+
+    FakeEventSource.instances[0].error();
+
+    expect(client.getStatus()).toBe('closed');
+  });
+
+  it('flips back to open if the browser auto-reconnects', () => {
+    const client = new SseClient('http://localhost:3001/events', FakeEventSource as never);
+    client.subscribe(() => {});
+    FakeEventSource.instances[0].open();
+    FakeEventSource.instances[0].error();
+
+    FakeEventSource.instances[0].open();
+
+    expect(client.getStatus()).toBe('open');
+  });
+
+  it('notifies status listeners on each transition', () => {
+    const client = new SseClient('http://localhost:3001/events', FakeEventSource as never);
+    const statusListener = jest.fn();
+    client.subscribeStatus(statusListener);
+
+    client.subscribe(() => {});
+    FakeEventSource.instances[0].open();
+    FakeEventSource.instances[0].error();
+
+    expect(statusListener.mock.calls.map((c) => c[0])).toEqual(['open', 'closed']);
+  });
+
+  it('stops notifying after unsubscribing from status', () => {
+    const client = new SseClient('http://localhost:3001/events', FakeEventSource as never);
+    const statusListener = jest.fn();
+    const unsubscribe = client.subscribeStatus(statusListener);
+    unsubscribe();
+
+    client.subscribe(() => {});
+    FakeEventSource.instances[0].open();
+
+    expect(statusListener).not.toHaveBeenCalled();
   });
 });

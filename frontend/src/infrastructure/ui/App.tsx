@@ -6,6 +6,7 @@ import { SseClient } from '../realtime/SseClient'
 import { RealtimeProvider } from './react/providers/RealtimeProvider'
 import { UseCasesProvider } from './react/providers/UseCasesProvider'
 import { useRealtimeInvalidation } from './react/hooks/useRealtimeInvalidation'
+import { ConnectionStatusBadge } from './react/components/ConnectionStatusBadge'
 
 function RealtimeInvalidationBoundary({ children }: { children: React.ReactNode }) {
   useRealtimeInvalidation()
@@ -21,6 +22,7 @@ function App() {
       <UseCasesProvider>
         <RealtimeProvider client={sseClient}>
           <RealtimeInvalidationBoundary>
+            <ConnectionStatusBadge />
             <BrowserRouter>
               <AppRoutes />
             </BrowserRouter>
