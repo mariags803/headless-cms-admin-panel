@@ -471,3 +471,19 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   `execute` — harmless against the old stub page, but the real form now awaits
   it. 81 frontend tests green; `npm run build -w frontend` clean.
 - **Next:** `4.3` — reference target picker.
+
+### [2026-06-24] fix-cors — frontend↔backend CORS error
+- **Did:** Frontend (`localhost:5173`) couldn't reach backend (`localhost:3001`) —
+  no CORS middleware on the Express app, so the browser blocked every
+  `/schemas`, `/entries`, `/api/content`, and `/events` (SSE) request. Added
+  the `cors` package (+ `@types/cors`) to `backend/`, applied
+  `app.use(cors({ origin: 'http://localhost:5173' }))` as the first middleware
+  in `server.ts`, before `express.json()` and all routers — covers REST and the
+  SSE stream alike.
+- **Decisions:** Used the `cors` npm package over hand-rolled headers (asked
+  the user per `CLAUDE.md` §2.7 before adding the dependency); origin pinned to
+  the Vite dev server rather than `*`, since this is a same-machine dev setup.
+- **Tests:** No new automated test — this is infra wiring, not domain/app
+  logic. Verified manually: backend + frontend dev servers running, schema
+  list loads, SSE `/events` connects, no CORS error in the browser console.
+- **Next:** none.

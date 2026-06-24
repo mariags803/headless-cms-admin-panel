@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import cors from 'cors';
 import { createSchemaRouter, type SchemaControllerDeps } from './SchemaController';
 import { createEntryRouter, type EntryControllerDeps } from './EntryController';
 import { createContentRouter, type ContentControllerDeps } from './ContentController';
@@ -14,6 +15,7 @@ export interface ServerDeps {
 
 export function createServer(deps: ServerDeps): Express {
   const app = express();
+  app.use(cors({ origin: 'http://localhost:5173' }));
   app.use(express.json());
   app.use('/schemas', createSchemaRouter(deps.schema));
   app.use('/entries', createEntryRouter(deps.entry));
