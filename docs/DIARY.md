@@ -577,3 +577,25 @@ log; ADRs collected at the top. See the format in `CLAUDE.md` §8.
   in the browser (create, required validation, edit with seeded values, cancel) via a
   scripted Playwright run against the real backend.
 - **Next:** `5.4` — reference field: target dropdown + jump-to-entry link.
+
+### [2026-06-24] 5.4 — Reference field: target dropdown + jump-to-entry link
+- **Did:** Replaced `ReferenceInput`'s plain entry-id text box with the real UI: a
+  `<select>` of the target schema's entries (`useSchema(field.refSchemaId)` +
+  `useEntries(field.refSchemaId)`), each option labeled by the target schema's first
+  `text` field value, falling back to the entry id when no text field exists or the
+  value is empty. A "View entry →" link next to the select jumps to
+  `/schemas/:refSchemaId/entries/:entryId/edit` whenever a value is selected. The
+  component's external props (`field`/`value`/`onChange`/`error`) stayed frozen since
+  `5.1`, so `FieldRegistry` and `EntryEditorPage` needed no changes.
+- **Decisions:** When the target schema has zero entries, render an italic empty-state
+  message instead of an unusable empty select (matches the `ReferenceTargetPicker`
+  pattern from `4.3`). The select disables while schema/entries are loading rather than
+  rendering a separate loading state, since it's one field among many on the form.
+- **Tests:** New `ReferenceInput.test.tsx` (option labels from first text field, id
+  fallback when no text field, select → `onChange(id)`, placeholder → `onChange(null)`,
+  jump link present/absent by value, empty-state message, error alert) — now wrapped
+  with `makeWrapper` + `MemoryRouter` since the component reads use cases and renders a
+  router `Link`. Removed the now-stale reference-input assertions from
+  `FieldRegistry.test.tsx` (it no longer renders a plain text input for `reference`).
+  122 frontend tests green; `tsc --noEmit` and `eslint` clean.
+- **Next:** Phase 6 — schema evolution (`6.1` `diffSchemas` + `classifyRisk`).

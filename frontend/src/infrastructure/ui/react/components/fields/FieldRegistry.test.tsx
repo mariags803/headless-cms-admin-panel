@@ -41,16 +41,6 @@ describe('FieldInput dispatch', () => {
     expect(screen.getByLabelText('Name')).toHaveAttribute('type', 'date');
   });
 
-  it('renders a plain text input for type reference', () => {
-    render(
-      <FieldInput
-        field={makeField({ type: 'reference', refSchemaId: 'schema-1' })}
-        value={null}
-        onChange={jest.fn()}
-      />,
-    );
-    expect(screen.getByLabelText('Name')).toHaveAttribute('type', 'text');
-  });
 });
 
 describe('TextInput behavior', () => {
@@ -93,35 +83,6 @@ describe('DateInput behavior', () => {
     render(<FieldInput field={makeField({ type: 'date' })} value={null} onChange={onChange} />);
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '2026-06-24' } });
     expect(onChange).toHaveBeenCalledWith('2026-06-24');
-  });
-});
-
-describe('ReferenceInput behavior', () => {
-  it('treats value as a plain entry id string', () => {
-    const onChange = jest.fn();
-    render(
-      <FieldInput
-        field={makeField({ type: 'reference', refSchemaId: 'schema-1' })}
-        value="entry-9"
-        onChange={onChange}
-      />,
-    );
-    expect(screen.getByLabelText('Name')).toHaveValue('entry-9');
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'entry-10' } });
-    expect(onChange).toHaveBeenCalledWith('entry-10');
-  });
-
-  it('calls onChange with null when cleared', () => {
-    const onChange = jest.fn();
-    render(
-      <FieldInput
-        field={makeField({ type: 'reference', refSchemaId: 'schema-1' })}
-        value="entry-9"
-        onChange={onChange}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '' } });
-    expect(onChange).toHaveBeenCalledWith(null);
   });
 });
 
