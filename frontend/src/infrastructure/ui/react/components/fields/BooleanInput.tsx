@@ -5,7 +5,7 @@ export function BooleanInput({ field, value, onChange, error }: FieldInputProps)
   return (
     <>
       <input
-        className={styles.input}
+        className={styles.checkbox}
         data-invalid={error ? '' : undefined}
         type="checkbox"
         aria-label={field.name}

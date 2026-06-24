@@ -219,7 +219,7 @@ export function EntryEditorPage() {
 
       <form onSubmit={handleSubmit} className={styles.form}>
         {activeSchema.fields.map((field) => (
-          <div key={field.id} className={styles.field}>
+          <div key={field.id} className={styles.field} data-field-type={field.type}>
             <span className={styles.fieldLabel}>
               {field.name}
               {field.required && <span aria-hidden="true"> *</span>}
